@@ -5,31 +5,31 @@
 ### 2024/12/30
 
 - ✨ 推荐本次更新，实测可实现秒播级的观看体验，不可播放的情况明显减少
-- ✨ 支持获取分辨率，GUI用户需要手动安装FFmpeg（#608）
-- ✨ 支持text/plain结果输出，解决部分播放器显示问题（#736）
+- ✨ 支持获取分辨率，GUI用户需要手动安装`FFmpeg`（#608）
+- ✨ 支持`text/plain`结果输出，解决部分播放器显示问题（#736）
 - ✨ 增加默认订阅源
 - 🐛 修复IPv6接口测速输出的速率结果异常（#739）
 - 🐛 修复GUI出现的错误输出（#743）
 - 🐛 修复分辨率数值比较异常（#744）
 - 🐛 修复台标无法显示（#762）
-- 🪄 优化接口测速方法，兼容多种m3u8接口类型
-- 🪄 调整Github工作流执行结果IPv类型为自动，即根据网络环境自动选择IPv4或IPv6，若有需要可手动设置ipv_type_prefer调整输出偏好
+- 🪄 优化接口测速方法，兼容多种`m3u8`接口类型
+- 🪄 调整Github工作流执行结果IPv类型为自动，即根据网络环境自动选择IPv4或IPv6，若有需要可手动设置`ipv_type_prefer`调整输出偏好
 - 🪄 更新部分配置参数说明
 
 <details>
   <summary>English</summary>
 
 - ✨ Recommended update, tested to achieve instant playback experience, significantly reducing playback failures
-- ✨ Support for obtaining resolution, GUI users need to manually install FFmpeg (#608)
-- ✨ Support for text/plain result output, solving display issues in some players (#736)
+- ✨ Support for obtaining resolution, GUI users need to manually install `FFmpeg` (#608)
+- ✨ Support for `text/plain` result output, solving display issues in some players (#736)
 - ✨ Added default subscription sources
 - 🐛 Fixed abnormal speed results for IPv6 interface speed tests (#739)
 - 🐛 Fixed error output in GUI (#743)
 - 🐛 Fixed abnormal resolution value comparison (#744)
 - 🐛 Fixed logo display issue (#762)
-- 🪄 Optimized interface speed test method, compatible with various m3u8 interface types
+- 🪄 Optimized interface speed test method, compatible with various `m3u8` interface types
 - 🪄 Adjusted GitHub workflow execution result IPv type to automatic, selecting IPv4 or IPv6 based on network
-  environment, with manual setting option for ipv_type_prefer
+  environment, with manual setting option for `ipv_type_prefer`
 - 🪄 Updated some configuration parameter descriptions
 
 </details>

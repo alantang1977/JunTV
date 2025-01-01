@@ -317,8 +317,7 @@ def merge_objects(*objects):
                     dict1[key].update(value)
                 elif isinstance(dict1[key], list):
                     if value:
-                        dict1[key].extend(value)
-                        dict1[key] = list(set(dict1[key]))
+                        dict1[key].extend(x for x in value if x not in dict1[key])
                 elif value:
                     dict1[key] = {dict1[key], value}
             else:
@@ -477,11 +476,11 @@ def format_url_with_cache(url, cache=None):
     return add_url_info(url, f"cache:{cache}") if cache else url
 
 
-def remove_cache_info(str):
+def remove_cache_info(string):
     """
     Remove the cache info from the string
     """
-    return re.sub(r"[^a-zA-Z\u4e00-\u9fa5\$]?cache:.*", "", str)
+    return re.sub(r"[^a-zA-Z\u4e00-\u9fa5$]?cache:.*", "", string)
 
 
 def resource_path(relative_path, persistent=False):

@@ -301,6 +301,17 @@ async def get_speed(url, ipv6_proxy=None, filter_resolution=config.open_filter_r
             callback()
 
 
+def sort_urls_key(item):
+    """
+    Sort the urls with key
+    """
+    speed, resolution, origin = item["speed"], item["resolution"], item["origin"]
+    if origin == "whitelist":
+        return float("inf")
+    else:
+        return (speed if speed is not None else float("-inf")) + get_resolution_value(resolution)
+
+
 def sort_urls(name, data, supply=config.open_supply, filter_speed=config.open_filter_speed, min_speed=config.min_speed,
               filter_resolution=config.open_filter_resolution, min_resolution=config.min_resolution_value,
               logger=None):
@@ -343,15 +354,7 @@ def sort_urls(name, data, supply=config.open_supply, filter_speed=config.open_fi
                     result["speed"] = speed
                     result["resolution"] = resolution
                     filter_data.append(result)
-
-    def combined_key(item):
-        speed, resolution, origin = item["speed"], item["resolution"], item["origin"]
-        if origin == "whitelist":
-            return float("inf")
-        else:
-            return (speed if speed is not None else float("-inf")) + get_resolution_value(resolution)
-
-    filter_data.sort(key=combined_key, reverse=True)
+    filter_data.sort(key=sort_urls_key, reverse=True)
     return [
         (item["url"], item["date"], item["resolution"], item["origin"])
         for item in filter_data

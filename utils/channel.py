@@ -626,7 +626,9 @@ def write_channel_to_file(data, ipv6=False, callback=None):
     Write channel to file
     """
     try:
-        path = "output/result_new.txt"
+        path = constants.result_path
+        if not os.path.exists("output"):
+            os.makedirs("output")
         no_result_name = []
         open_empty_category = config.open_empty_category
         ipv_type_prefer = list(config.ipv_type_prefer)
