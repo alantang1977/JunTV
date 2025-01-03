@@ -9,6 +9,7 @@ import m3u8
 from aiohttp import ClientSession, TCPConnector
 from multidict import CIMultiDictProxy
 
+import utils.constants as constants
 from utils.config import config
 from utils.tools import is_ipv6, remove_cache_info, get_resolution_value
 
@@ -289,6 +290,11 @@ async def get_speed(url, ipv6_proxy=None, filter_resolution=config.open_filter_r
             data['speed'] = float("inf")
             data['delay'] = float("-inf")
             data['resolution'] = "1920x1080"
+        elif re.match(constants.rtmp_url_pattern, url) is not None:
+            start_time = time()
+            data['resolution'] = await get_resolution_ffprobe(url, timeout)
+            data['delay'] = int(round((time() - start_time) * 1000))
+            data['speed'] = float("inf") if data['resolution'] is not None else 0
         else:
             data.update(await get_speed_m3u8(url, filter_resolution, timeout))
         if cache_key and cache_key not in cache:

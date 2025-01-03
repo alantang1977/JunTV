@@ -443,8 +443,8 @@ def process_nested_dict(data, seen, flag=None, force_str=None):
             data[key] = remove_duplicates_from_tuple_list(value, seen, flag, force_str)
 
 
-url_domain_pattern = re.compile(
-    r"\b((https?):\/\/)?(\[[0-9a-fA-F:]+\]|([\w-]+\.)+[\w-]+)(:[0-9]{1,5})?\b"
+url_domain_compile = re.compile(
+    constants.url_domain_pattern
 )
 
 
@@ -452,7 +452,7 @@ def get_url_domain(url):
     """
     Get the url domain
     """
-    matcher = url_domain_pattern.search(url)
+    matcher = url_domain_compile.search(url)
     if matcher:
         return matcher.group()
     return None
