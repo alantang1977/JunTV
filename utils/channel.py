@@ -29,7 +29,8 @@ from utils.tools import (
     get_urls_from_file,
     get_name_urls_from_file,
     get_logger,
-    get_datetime_now
+    get_datetime_now,
+    format_url_with_cache
 )
 
 
@@ -58,9 +59,8 @@ def get_channel_data_from_file(channels, file, use_old, whitelist):
                         category_dict[name].append((whitelist_url, None, None, "whitelist"))
                 if use_old and url:
                     info = url.partition("$")[2]
-                    origin = None
-                    if info and info.startswith("!"):
-                        origin = "whitelist"
+                    origin = "whitelist" if info and info.startswith("!") else "local"
+                    url = format_url_with_cache(url) if origin == "local" else url
                     data = (url, None, None, origin)
                     if data not in category_dict[name]:
                         category_dict[name].append(data)
