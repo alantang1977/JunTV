@@ -243,7 +243,7 @@ def get_total_urls(info_list, ipv_type_prefer, origin_type_prefer):
 
 def get_total_urls_from_sorted_data(data):
     """
-    Get the total urls with filter by date and depulicate from sorted data
+    Get the total urls with filter by date and duplicate from sorted data
     """
     total_urls = []
     if len(data) > config.urls_limit:
@@ -483,7 +483,7 @@ def remove_cache_info(string):
     """
     Remove the cache info from the string
     """
-    return re.sub(r"[^a-zA-Z\u4e00-\u9fa5$]?cache:.*", "", string)
+    return re.sub(r"[.*]?\$?cache:.*", "", string)
 
 
 def resource_path(relative_path, persistent=False):

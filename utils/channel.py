@@ -34,7 +34,17 @@ from utils.tools import (
 )
 
 
-def get_channel_data_from_file(channels, file, use_old, whitelist):
+def format_channel_data(url: str, origin: str = None) -> tuple:
+    """
+    Format the channel data
+    """
+    info = url.partition("$")[2]
+    url_origin = "whitelist" if info and info.startswith("!") else origin
+    url = format_url_with_cache(url) if url_origin == origin else url
+    return url, None, None, url_origin
+
+
+def get_channel_data_from_file(channels, file, whitelist, open_local=config.open_local, local_data=None):
     """
     Get the channel data from the file
     """
@@ -57,13 +67,15 @@ def get_channel_data_from_file(channels, file, use_old, whitelist):
                 if name in whitelist:
                     for whitelist_url in whitelist[name]:
                         category_dict[name].append((whitelist_url, None, None, "whitelist"))
-                if use_old and url:
-                    info = url.partition("$")[2]
-                    origin = "whitelist" if info and info.startswith("!") else "local"
-                    url = format_url_with_cache(url) if origin == "local" else url
-                    data = (url, None, None, origin)
+                if open_local and url:
+                    data = format_channel_data(url, "local")
                     if data not in category_dict[name]:
                         category_dict[name].append(data)
+                    if local_data and name in local_data:
+                        for local_url in local_data[name]:
+                            local_channel_data = format_channel_data(local_url, "local")
+                            if local_channel_data not in category_dict[name]:
+                                category_dict[name].append(local_channel_data)
     return channels
 
 
@@ -73,6 +85,7 @@ def get_channel_items():
     """
     user_source_file = resource_path(config.source_file)
     channels = defaultdict(lambda: defaultdict(list))
+    local_data = get_name_urls_from_file(resource_path(config.local_file))
     whitelist = get_name_urls_from_file(constants.whitelist_path)
     whitelist_urls = get_urls_from_file(constants.whitelist_path)
     whitelist_len = len(list(whitelist.keys()))
@@ -82,7 +95,7 @@ def get_channel_items():
     if os.path.exists(user_source_file):
         with open(user_source_file, "r", encoding="utf-8") as file:
             channels = get_channel_data_from_file(
-                channels, file, config.open_use_old_result, whitelist
+                channels, file, whitelist, config.open_local, local_data
             )
 
     if config.open_use_old_result:

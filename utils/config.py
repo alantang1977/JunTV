@@ -140,6 +140,7 @@ class ConfigManager:
     @property
     def source_limits(self):
         return {
+            "local": self.local_num,
             "hotel": self.hotel_num,
             "multicast": self.multicast_num,
             "subscribe": self.subscribe_num,
@@ -314,6 +315,18 @@ class ConfigManager:
     @property
     def time_zone(self):
         return self.config.get("Settings", "time_zone", fallback="Asia/Shanghai")
+
+    @property
+    def open_local(self):
+        return self.config.getboolean("Settings", "open_local", fallback=True)
+
+    @property
+    def local_file(self):
+        return self.config.get("Settings", "local_file", fallback="config/local.txt")
+
+    @property
+    def local_num(self):
+        return self.config.getint("Settings", "local_num", fallback=10)
 
     def load(self):
         """

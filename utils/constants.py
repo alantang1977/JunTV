@@ -20,7 +20,7 @@ log_path = os.path.join(output_path, "log.log")
 
 url_domain_pattern = r"((https?|rtmp)://)?(\[[0-9a-fA-F:]+]|([\w-]+\.?)+[\w-]+)(:[0-9]{1,5})?"
 
-url_pattern = url_domain_pattern + r"(/\S*)?(\$\S+)?"
+url_pattern = url_domain_pattern + r"(/.*)?"
 
 rtmp_url_pattern = r"^rtmp://.*$"
 
