@@ -98,7 +98,7 @@ def get_channel_items():
                 channels, file, whitelist, config.open_local, local_data
             )
 
-    if config.open_use_old_result:
+    if config.open_history:
         result_cache_path = resource_path(constants.cache_path)
         if os.path.exists(result_cache_path):
             with open(result_cache_path, "rb") as file:
@@ -497,7 +497,7 @@ def get_origin_method_name(method):
 
 def append_old_data_to_info_data(info_data, cate, name, data, whitelist=None, blacklist=None):
     """
-    Append history channel data to total info data
+    Append history and local channel data to total info data
     """
     append_data_to_info_data(
         info_data,
@@ -507,7 +507,9 @@ def append_old_data_to_info_data(info_data, cate, name, data, whitelist=None, bl
         whitelist=whitelist,
         blacklist=blacklist
     )
-    print("History:", len(data), end=", ")
+    local_len = len([x for x in data if x[3] in ["local", 'whitelist']])
+    print("History:", len(data) - local_len, end=", ")
+    print("Local:", local_len, end=", ")
 
 
 def append_total_data(
@@ -535,7 +537,7 @@ def append_total_data(
     for cate, channel_obj in items:
         for name, old_info_list in channel_obj.items():
             print(f"{name}:", end=" ")
-            if config.open_use_old_result and old_info_list:
+            if old_info_list and (config.open_history or config.open_local):
                 append_old_data_to_info_data(data, cate, name, old_info_list, whitelist=whitelist, blacklist=blacklist)
             for method, result in total_result:
                 if config.open_method[method]:
@@ -562,7 +564,7 @@ def append_total_data(
                     if name in names:
                         continue
                     print(f"{name}:", end=" ")
-                    if config.open_use_old_result:
+                    if config.open_history or config.open_local:
                         old_info_list = channel_obj.get(name, [])
                         if old_info_list:
                             append_old_data_to_info_data(

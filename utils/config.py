@@ -224,19 +224,20 @@ class ConfigManager:
     @property
     def open_method(self):
         return {
+            "local": self.open_local,
             "subscribe": self.open_subscribe,
             "hotel": self.open_hotel,
             "multicast": self.open_multicast,
             "online_search": self.open_online_search,
-            "hotel_fofa": self.open_hotel_fofa,
-            "hotel_foodie": self.open_hotel_foodie,
-            "multicast_fofa": self.open_multicast_fofa,
-            "multicast_foodie": self.open_multicast_foodie,
+            "hotel_fofa": self.open_hotel and self.open_hotel_fofa,
+            "hotel_foodie": self.open_hotel and self.open_hotel_foodie,
+            "multicast_fofa": self.open_multicast and self.open_multicast_fofa,
+            "multicast_foodie": self.open_multicast and self.open_multicast_foodie,
         }
 
     @property
-    def open_use_old_result(self):
-        return self.config.getboolean("Settings", "open_use_old_result", fallback=True)
+    def open_history(self):
+        return self.config.getboolean("Settings", "open_history", fallback=True)
 
     @property
     def open_sort(self):

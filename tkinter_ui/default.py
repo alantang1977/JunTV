@@ -167,19 +167,19 @@ class DefaultUI:
         )
         self.open_local_checkbutton.pack(side=tk.LEFT, padx=4, pady=8)
 
-        self.open_use_old_result_label = tk.Label(
+        self.open_history_label = tk.Label(
             frame_default_open_cache_column2, text="使用历史结果:", width=12
         )
-        self.open_use_old_result_label.pack(side=tk.LEFT, padx=4, pady=8)
-        self.open_use_old_result_var = tk.BooleanVar(value=config.open_use_old_result)
-        self.open_use_old_result_checkbutton = ttk.Checkbutton(
+        self.open_history_label.pack(side=tk.LEFT, padx=4, pady=8)
+        self.open_history_var = tk.BooleanVar(value=config.open_history)
+        self.open_history_checkbutton = ttk.Checkbutton(
             frame_default_open_cache_column2,
-            variable=self.open_use_old_result_var,
+            variable=self.open_history_var,
             onvalue=True,
             offvalue=False,
-            command=self.update_open_use_old_result,
+            command=self.update_open_history,
         )
-        self.open_use_old_result_checkbutton.pack(side=tk.LEFT, padx=4, pady=8)
+        self.open_history_checkbutton.pack(side=tk.LEFT, padx=4, pady=8)
 
         self.open_use_cache_label = tk.Label(
             frame_default_open_cache_column2, text="使用离线数据:", width=12
@@ -470,9 +470,9 @@ class DefaultUI:
             "Settings", "open_local", str(self.open_local_var.get())
         )
 
-    def update_open_use_old_result(self):
+    def update_open_history(self):
         config.set(
-            "Settings", "open_use_old_result", str(self.open_use_old_result_var.get())
+            "Settings", "open_history", str(self.open_history_var.get())
         )
 
     def update_open_use_cache(self):
@@ -573,7 +573,7 @@ class DefaultUI:
             "open_service_checkbutton",
             "app_port_entry",
             "open_local_checkbutton",
-            "open_use_old_result_checkbutton",
+            "open_history_checkbutton",
             "open_use_cache_checkbutton",
             "open_request_checkbutton",
             "open_driver_checkbutton",
