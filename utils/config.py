@@ -329,6 +329,10 @@ class ConfigManager:
     def local_num(self):
         return self.config.getint("Settings", "local_num", fallback=10)
 
+    @property
+    def sort_duplicate_limit(self):
+        return self.config.getint("Settings", "sort_duplicate_limit", fallback=2)
+
     def load(self):
         """
         Load the config

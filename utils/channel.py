@@ -30,7 +30,8 @@ from utils.tools import (
     get_name_urls_from_file,
     get_logger,
     get_datetime_now,
-    format_url_with_cache
+    format_url_with_cache,
+    get_url_host
 )
 
 
@@ -461,6 +462,7 @@ def append_data_to_info_data(info_data, cate, name, data, origin=None, check=Tru
     """
     init_info_data(info_data, cate, name)
     urls = [x[0].partition("$")[0] for x in info_data[cate][name] if x[0]]
+    url_hosts = [get_url_host(url) for url in urls]
     for item in data:
         try:
             url, date, resolution, *rest = item
@@ -470,10 +472,23 @@ def append_data_to_info_data(info_data, cate, name, data, origin=None, check=Tru
             if url:
                 url_partition = url.partition("$")
                 pure_url = url_partition[0]
+                url_host = get_url_host(url_partition[0])
                 url_info = url_partition[2]
                 white_info = url_info and url_info.startswith("!")
-                if (pure_url in urls) and not white_info:
-                    continue
+                if not not white_info:
+                    if pure_url in urls:
+                        continue
+                    if url_host in url_hosts:
+                        for p_url in urls:
+                            if get_url_host(p_url) == url_host and len(p_url) < len(pure_url):
+                                urls.remove(p_url)
+                                urls.append(pure_url)
+                                for index, info in enumerate(info_data[cate][name]):
+                                    if info[0] and get_url_host(info[0]) == url_host:
+                                        info_data[cate][name][index] = (url, date, resolution, url_origin)
+                                        break
+                                break
+                        continue
                 if white_info or (whitelist and check_url_by_keywords(url, whitelist)):
                     url_origin = "whitelist"
                 if (
@@ -484,6 +499,7 @@ def append_data_to_info_data(info_data, cate, name, data, origin=None, check=Tru
                 ):
                     info_data[cate][name].append((url, date, resolution, url_origin))
                     urls.append(pure_url)
+                    url_hosts.append(url_host)
         except:
             continue
 
@@ -589,7 +605,7 @@ async def process_sort_channel_list(data, ipv6=False, callback=None):
     get_resolution = open_filter_resolution and check_ffmpeg_installed_status()
     sort_timeout = config.sort_timeout
     need_sort_data = copy.deepcopy(data)
-    process_nested_dict(need_sort_data, seen=set(), flag=r"cache:(.*)", force_str="!")
+    process_nested_dict(need_sort_data, seen={}, flag=r"cache:(.*)", force_str="!")
     result = {}
     semaphore = asyncio.Semaphore(10)
 
@@ -680,9 +696,9 @@ def write_channel_to_file(data, ipv6=False, callback=None):
             print()
         if config.open_update_time:
             update_time_url = next(
-                (get_total_urls(info_list, ipv_type_prefer, origin_type_prefer)[0]
-                 for channel_obj in data.values()
-                 for info_list in channel_obj.values() if info_list),
+                (urls[0] for channel_obj in data.values()
+                 for info_list in channel_obj.values()
+                 if (urls := get_total_urls(info_list, ipv_type_prefer, origin_type_prefer))),
                 "url"
             )
             if config.update_time_position == "top":

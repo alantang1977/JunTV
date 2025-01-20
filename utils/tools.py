@@ -429,8 +429,9 @@ def remove_duplicates_from_tuple_list(tuple_list, seen, flag=None, force_str=Non
             matcher = re.search(flag, item_first)
             if matcher:
                 part = matcher.group(1)
-        if part not in seen:
-            seen.add(part)
+        seen_num = seen.get(part, 0)
+        if (seen_num < config.sort_duplicate_limit) or (seen_num == 0 and config.sort_duplicate_limit == 0):
+            seen[part] = seen_num + 1
             unique_list.append(item)
     return unique_list
 
@@ -446,16 +447,16 @@ def process_nested_dict(data, seen, flag=None, force_str=None):
             data[key] = remove_duplicates_from_tuple_list(value, seen, flag, force_str)
 
 
-url_domain_compile = re.compile(
-    constants.url_domain_pattern
+url_host_compile = re.compile(
+    constants.url_host_pattern
 )
 
 
-def get_url_domain(url):
+def get_url_host(url):
     """
-    Get the url domain
+    Get the url host
     """
-    matcher = url_domain_compile.search(url)
+    matcher = url_host_compile.search(url)
     if matcher:
         return matcher.group()
     return None
@@ -475,7 +476,7 @@ def format_url_with_cache(url, cache=None):
     """
     Format the URL with cache
     """
-    cache = cache or get_url_domain(url) or ""
+    cache = cache or get_url_host(url) or ""
     return add_url_info(url, f"cache:{cache}") if cache else url
 
 
@@ -483,7 +484,7 @@ def remove_cache_info(string):
     """
     Remove the cache info from the string
     """
-    return re.sub(r"[.*]?\$?cache:.*", "", string)
+    return re.sub(r"[.*]?\$?-?cache:.*", "", string)
 
 
 def resource_path(relative_path, persistent=False):
