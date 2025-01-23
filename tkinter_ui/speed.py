@@ -139,7 +139,7 @@ class SpeedUI:
     def update_open_sort(self):
         config.set("Settings", "open_sort", str(self.open_sort_var.get()))
 
-    def update_sort_timeout(self):
+    def update_sort_timeout(self, event):
         config.set("Settings", "sort_timeout", self.sort_timeout_entry.get())
 
     def update_open_filter_speed(self):

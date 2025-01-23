@@ -151,12 +151,13 @@ def get_total_urls(info_list, ipv_type_prefer, origin_type_prefer):
     """
     Get the total urls from info list
     """
+    ipv_prefer_bool = bool(ipv_type_prefer)
     origin_prefer_bool = bool(origin_type_prefer)
+    if not ipv_prefer_bool:
+        ipv_type_prefer = ["all"]
     if not origin_prefer_bool:
         origin_type_prefer = ["all"]
-    categorized_urls = {
-        origin: {"ipv4": [], "ipv6": []} for origin in origin_type_prefer
-    }
+    categorized_urls = {origin: {ipv_type: [] for ipv_type in ipv_type_prefer} for origin in origin_type_prefer}
     total_urls = []
     for url, _, resolution, origin in info_list:
         if not origin:
@@ -190,15 +191,9 @@ def get_total_urls(info_list, ipv_type_prefer, origin_type_prefer):
         if not origin_prefer_bool:
             origin = "all"
 
-        if url_is_ipv6:
-            categorized_urls[origin]["ipv6"].append(url)
-        else:
-            categorized_urls[origin]["ipv4"].append(url)
+        categorized_urls[origin]["all" if not ipv_prefer_bool else "ipv6" if url_is_ipv6 else "ipv4"].append(url)
 
-    ipv_num = {
-        "ipv4": 0,
-        "ipv6": 0,
-    }
+    ipv_num = {ipv_type: 0 for ipv_type in ipv_type_prefer}
     urls_limit = config.urls_limit
     for origin in origin_type_prefer:
         if len(total_urls) >= urls_limit:
@@ -221,7 +216,7 @@ def get_total_urls(info_list, ipv_type_prefer, origin_type_prefer):
                 continue
 
     if config.open_supply:
-        ipv_type_total = list(dict.fromkeys(ipv_type_prefer + ["ipv4", "ipv6"]))
+        ipv_type_total = list(dict.fromkeys(ipv_type_prefer + (["ipv4", "ipv6"] if ipv_prefer_bool else [])))
         if len(total_urls) < urls_limit:
             for origin in origin_type_prefer:
                 if len(total_urls) >= urls_limit:

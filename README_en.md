@@ -155,7 +155,7 @@ https://cdn.jsdelivr.net/gh/Guovin/iptv-api@gd/source.json
 | recent_days            | Retrieve interfaces updated within a recent time range (in days), reducing appropriately can avoid matching issues                                                                                                                                                                                                                                                                                                               | 30                |
 | request_timeout        | Query request timeout duration, in seconds (s), used to control the timeout and retry duration for querying interface text links. Adjusting this value can optimize update time.                                                                                                                                                                                                                                                 | 10                |
 | sort_timeout           | The timeout duration for speed testing of a single interface, in seconds (s). A larger value means a longer testing period, which can increase the number of interfaces obtained but may decrease their quality. A smaller value means a shorter testing time, which can obtain low-latency interfaces with better quality. Adjusting this value can optimize the update time.                                                   | 10                |
-| sort_duplicate_limit   | Number of allowed repetitions for the same domain interface, used to control the number of repetitions when performing speed tests and obtaining resolutions. The larger the value, the more accurate the results, but the time consumption will increase exponentially                                                                                                                                                          | 2                 |
+| sort_duplicate_limit   | Number of allowed repetitions for the same domain interface, used to control the number of repetitions when performing speed tests and obtaining resolutions. The larger the value, the more accurate the results, but the time consumption will increase                                                                                                                                                                        | 3                 |
 | source_file            | Template file path                                                                                                                                                                                                                                                                                                                                                                                                               | config/demo.txt   |
 | subscribe_num          | The number of preferred subscribe source interfaces in the results                                                                                                                                                                                                                                                                                                                                                               | 10                |
 | time_zone              | Time zone, can be used to control the time zone displayed by the update time, optional values: Asia/Shanghai or other time zone codes                                                                                                                                                                                                                                                                                            | Asia/Shanghai     |
@@ -214,7 +214,7 @@ pipenv run ui
 
 It's recommended to try each one and choose the version that suits you
 
-1. Pull the image:
+#### 1. Pull the image
 
 - iptv-api
 
@@ -240,7 +240,7 @@ docker pull guovern/iptv-api:lite
 docker pull docker.1ms.run/guovern/iptv-api:lite
 ```
 
-2. Run the container:
+#### 2. Run the container
 
 - iptv-api
 
@@ -254,31 +254,43 @@ docker run -d -p 8000:8000 guovern/iptv-api
 docker run -d -p 8000:8000 guovern/iptv-api:lite
 ```
 
-Volume Mount Parameter (Optional):
+##### Mount(Recommended):
+
 This allows synchronization of files between the host machine and the container. Modifying templates, configurations,
 and retrieving updated result files can be directly operated in the host machine's folder.
 
 Taking the host path /etc/docker as an example:
 
-- iptv-api：
+- iptv-api
 
 ```bash
-docker run -v /etc/docker/config:/iptv-api/config -v /etc/docker/output:/iptv-api/output -d -p 8000:8000 guovern/iptv-api
+-v /etc/docker/config:/iptv-api/config
+-v /etc/docker/output:/iptv-api/output
 ```
 
-- iptv-api:lite：
+- iptv-api:lite
 
 ```bash
-docker run -v /etc/docker/config:/iptv-api-lite/config -v /etc/docker/output:/iptv-api-lite/output -d -p 8000:8000 guovern/iptv-api:lite
+-v /etc/docker/config:/iptv-api-lite/config
+-v /etc/docker/output:/iptv-api-lite/output
 ```
 
-Port environment variables:
+##### Environment Variables:
+
+- Port
 
 ```bash
 -e APP_PORT=8000
 ```
 
-3. Update results:
+- Scheduled execution time
+
+```bash
+-e UPDATE_CRON1="0 22 * * *"
+-e UPDATE_CRON2="0 10 * * *"
+```
+
+#### 3. Update results
 
 - API address: `ip:8000`
 - m3u api：`ip:8000/m3u`
