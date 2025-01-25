@@ -191,7 +191,12 @@ def get_total_urls(info_list, ipv_type_prefer, origin_type_prefer):
         if not origin_prefer_bool:
             origin = "all"
 
-        categorized_urls[origin]["all" if not ipv_prefer_bool else "ipv6" if url_is_ipv6 else "ipv4"].append(url)
+        if ipv_prefer_bool:
+            key = "ipv6" if url_is_ipv6 else "ipv4"
+            if key in ipv_type_prefer:
+                categorized_urls[origin][key].append(url)
+        else:
+            categorized_urls[origin]["all"].append(url)
 
     ipv_num = {ipv_type: 0 for ipv_type in ipv_type_prefer}
     urls_limit = config.urls_limit
