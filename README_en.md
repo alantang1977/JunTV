@@ -73,6 +73,16 @@
 - Interface source:
 
 ```bash
+https://raw.githubusercontent.com/Guovin/iptv-api/gd/output/result.m3u
+```
+
+```bash
+https://raw.githubusercontent.com/Guovin/iptv-api/gd/output/result.txt
+```
+
+or
+
+```bash
 https://cdn.jsdelivr.net/gh/Guovin/iptv-api@gd/output/result.m3u
 ```
 
@@ -81,6 +91,12 @@ https://cdn.jsdelivr.net/gh/Guovin/iptv-api@gd/output/result.txt
 ```
 
 - Data source:
+
+```bash
+https://raw.githubusercontent.com/Guovin/iptv-api/gd/source.json
+```
+
+or
 
 ```bash
 https://cdn.jsdelivr.net/gh/Guovin/iptv-api@gd/source.json
