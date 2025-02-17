@@ -248,14 +248,15 @@ def is_ipv6(url):
     """
     try:
         host = urllib.parse.urlparse(url).hostname
-        if host:
-            addr_info = socket.getaddrinfo(host, None, socket.AF_UNSPEC, socket.SOCK_STREAM)
-            for info in addr_info:
-                if info[0] == socket.AF_INET6:
-                    return True
-        return False
-    except Exception as e:
-        print(f"Check url ipv6 error: {e}")
+        ipaddress.IPv6Address(host)
+        return True
+        # if host:
+        #     addr_info = socket.getaddrinfo(host, None, socket.AF_UNSPEC, socket.SOCK_STREAM)
+        #     for info in addr_info:
+        #         if info[0] == socket.AF_INET6:
+        #             return True
+        # return False
+    except:
         return False
 
 
