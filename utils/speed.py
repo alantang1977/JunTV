@@ -388,10 +388,10 @@ def get_sort_result(
             result.update(default_ipv6_result)
         result_speed, result_delay, resolution = (
             result.get("speed") or 0,
-            result.get("delay") or -1,
+            result.get("delay"),
             result.get("resolution")
         )
-        if result_delay < 0:
+        if result_delay == -1:
             continue
         if not supply:
             if filter_speed and result_speed < min_speed:
