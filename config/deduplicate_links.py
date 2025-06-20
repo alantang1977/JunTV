@@ -1,175 +1,154 @@
 import os
 import re
-import json
-import csv
-import xml.etree.ElementTree as ET
-from html.parser import HTMLParser
-from shutil import copyfile
+import sys
 
 SUPPORTED_EXT = ['.txt', '.json', '.md', '.csv', '.xml', '.html', '.htm']
 CONFIG_FILE = os.path.join(os.path.dirname(__file__), 'filelist.txt')
 OUTPUT_DIR = os.path.join(os.path.dirname(__file__), 'deduped')
 
 def ensure_output_dir():
-    """Ensure the output directory exists."""
     if not os.path.exists(OUTPUT_DIR):
         os.makedirs(OUTPUT_DIR)
 
 def find_files_from_config(config_path):
-    """Read the config file and yield absolute file paths (one per line, relative to config file)."""
+    """Read the config file and yield absolute file paths (one per line, relative to config dir)."""
     with open(config_path, encoding='utf-8') as f:
         for line in f:
             line = line.strip()
             if not line or line.startswith('#'):
                 continue
             ext = os.path.splitext(line)[1].lower()
-            if ext in SUPPORTED_EXT:
-                yield os.path.abspath(os.path.join(os.path.dirname(config_path), line))
+            abs_path = os.path.abspath(os.path.join(os.path.dirname(config_path), line))
+            if ext in SUPPORTED_EXT and os.path.exists(abs_path):
+                yield abs_path
+            elif not os.path.exists(abs_path):
+                print(f"Warning: file not found: {abs_path}")
 
-def extract_links_from_text(text):
-    url_pattern = re.compile(r'https?://[^\s\'"<>]+')
-    return set(url_pattern.findall(text))
+def deduplicate_txt_md(path, output_path):
+    seen = set()
+    with open(path, encoding='utf-8') as f_in, open(output_path, 'w', encoding='utf-8') as f_out:
+        for line in f_in:
+            stripped = line.strip()
+            if stripped.startswith('http://') or stripped.startswith('https://'):
+                if stripped not in seen:
+                    f_out.write(line)
+                    seen.add(stripped)
+            else:
+                f_out.write(line)
 
-def deduplicate_file(path):
-    ext = os.path.splitext(path)[1].lower()
-    links = set()
-    content = None
-    output_path = os.path.join(OUTPUT_DIR, os.path.basename(path))
-    # TXT/MD: keep non-link lines, deduplicate links
-    if ext in ('.txt', '.md'):
-        with open(path, encoding='utf-8') as f:
-            lines = f.readlines()
-        # Separate links and non-link lines
-        link_lines = []
-        non_link_lines = []
-        for line in lines:
-            line_strip = line.strip()
-            if line_strip and (line_strip.startswith('http://') or line_strip.startswith('https://')):
-                link_lines.append(line_strip)
-            else:
-                non_link_lines.append(line)
-        unique_links = sorted(set(link_lines))
-        # Write: first non-link lines (preserve comments/empty lines), then unique links
-        with open(output_path, 'w', encoding='utf-8') as f:
-            for nl in non_link_lines:
-                f.write(nl)
-            if non_link_lines and not non_link_lines[-1].endswith('\n'):
-                f.write('\n')
-            for link in unique_links:
-                f.write(link + '\n')
-        print(f"Deduplicated {len(unique_links)} links in {path} -> {output_path}")
-    # JSON: deduplicate all links in all string values, preserve structure
-    elif ext == '.json':
-        with open(path, encoding='utf-8') as f:
-            try:
-                data = json.load(f)
-            except Exception:
-                print(f"Failed to parse JSON: {path}")
-                return
-        # Recursively deduplicate all links in strings
-        def dedup_json(obj):
-            if isinstance(obj, dict):
-                return {k: dedup_json(v) for k, v in obj.items()}
-            elif isinstance(obj, list):
-                return [dedup_json(i) for i in obj]
-            elif isinstance(obj, str):
-                # If it's a URL, return it, else unchanged
-                if obj.startswith('http://') or obj.startswith('https://'):
-                    return obj
-                else:
-                    return obj
-            else:
-                return obj
-        # For JSON, just copy (for now, only dedup if a list of links)
-        # Optionally, you could design a custom structure
-        json_text = json.dumps(data, ensure_ascii=False, indent=2)
-        links = extract_links_from_text(json_text)
-        # If the whole file is a list of links, deduplicate it
-        if isinstance(data, list) and all(isinstance(i, str) and (i.startswith('http://') or i.startswith('https://')) for i in data):
-            data = sorted(set(data))
-        with open(output_path, 'w', encoding='utf-8') as f:
-            json.dump(data, f, ensure_ascii=False, indent=2)
-        print(f"Deduplicated {len(links)} links in {path} -> {output_path}")
-    # CSV: deduplicate all links in all fields, preserve structure
-    elif ext == '.csv':
-        with open(path, encoding='utf-8', newline='') as f:
-            reader = list(csv.reader(f))
-        seen_links = set()
+def deduplicate_json(path, output_path):
+    import json
+    with open(path, encoding='utf-8') as f:
+        data = json.load(f)
+    # 针对 [链接,链接,...] 结构做去重，其它结构原样保留
+    if isinstance(data, list) and all(isinstance(i, str) and (i.startswith('http://') or i.startswith('https://')) for i in data):
+        seen = set()
+        deduped = []
+        for item in data:
+            if item not in seen:
+                deduped.append(item)
+                seen.add(item)
+        data = deduped
+    with open(output_path, 'w', encoding='utf-8') as f:
+        json.dump(data, f, ensure_ascii=False, indent=2)
+
+def deduplicate_csv(path, output_path):
+    import csv
+    seen = set()
+    deduped_rows = []
+    with open(path, encoding='utf-8', newline='') as f:
+        reader = csv.reader(f)
         for row in reader:
-            for i, cell in enumerate(row):
-                urls = extract_links_from_text(cell)
-                if urls:
-                    # Only keep one occurrence of each link
-                    row[i] = '\n'.join([url for url in urls if url not in seen_links])
-                    seen_links.update(urls)
-        with open(output_path, 'w', encoding='utf-8', newline='') as f:
-            writer = csv.writer(f)
-            writer.writerows(reader)
-        print(f"Deduplicated links in {path} -> {output_path}")
-    # XML: deduplicate links in text and attributes, preserve structure
-    elif ext == '.xml':
-        try:
-            tree = ET.parse(path)
-            root = tree.getroot()
-        except Exception:
-            print(f"Failed to parse XML: {path}")
-            return
-        links = set()
-        def dedup_xml(elem):
-            # Deduplicate links in text
-            if elem.text:
-                urls = extract_links_from_text(elem.text)
-                if urls:
-                    if not hasattr(dedup_xml, 'seen'):
-                        dedup_xml.seen = set()
-                    new_urls = [u for u in urls if u not in dedup_xml.seen]
-                    dedup_xml.seen.update(new_urls)
-                    elem.text = '\n'.join(new_urls)
-            # Deduplicate links in attributes
-            for k, v in elem.attrib.items():
-                urls = extract_links_from_text(v)
-                if urls:
-                    if not hasattr(dedup_xml, 'seen'):
-                        dedup_xml.seen = set()
-                    new_urls = [u for u in urls if u not in dedup_xml.seen]
-                    dedup_xml.seen.update(new_urls)
-                    elem.attrib[k] = '\n'.join(new_urls)
-            for child in elem:
-                dedup_xml(child)
-        dedup_xml.seen = set()
-        dedup_xml(root)
-        tree.write(output_path, encoding='utf-8', xml_declaration=True)
-        print(f"Deduplicated links in {path} -> {output_path}")
-    # HTML/HTM: deduplicate all href/src links, preserve structure
-    elif ext in ('.html', '.htm'):
-        with open(path, encoding='utf-8') as f:
-            html_content = f.read()
-        class LinkHTMLParser(HTMLParser):
-            def __init__(self):
-                super().__init__()
-                self.links = []
-            def handle_starttag(self, tag, attrs):
-                for attr, value in attrs:
-                    if attr in ['href', 'src']:
-                        if value.startswith('http://') or value.startswith('https://'):
-                            self.links.append(value)
-        parser = LinkHTMLParser()
-        parser.feed(html_content)
-        unique_links = sorted(set(parser.links))
-        # For HTML, save all unique links at the end as a comment
-        with open(output_path, 'w', encoding='utf-8') as f:
-            f.write(html_content)
-            f.write('\n<!-- Deduplicated Links:\n')
-            for link in unique_links:
-                f.write(link + '\n')
-            f.write('-->\n')
-        print(f"Deduplicated {len(unique_links)} links in {path} -> {output_path}")
+            new_row = []
+            for cell in row:
+                cell_stripped = cell.strip()
+                if cell_stripped.startswith('http://') or cell_stripped.startswith('https://'):
+                    if cell_stripped not in seen:
+                        seen.add(cell_stripped)
+                        new_row.append(cell)
+                    else:
+                        new_row.append('')
+                else:
+                    new_row.append(cell)
+            deduped_rows.append(new_row)
+    with open(output_path, 'w', encoding='utf-8', newline='') as f:
+        writer = csv.writer(f)
+        writer.writerows(deduped_rows)
+
+def deduplicate_xml(path, output_path):
+    import xml.etree.ElementTree as ET
+    tree = ET.parse(path)
+    root = tree.getroot()
+    seen = set()
+    def dedup_elem(elem):
+        if elem.text and (elem.text.strip().startswith('http://') or elem.text.strip().startswith('https://')):
+            val = elem.text.strip()
+            if val in seen:
+                elem.text = ''
+            else:
+                seen.add(val)
+        for k in elem.attrib:
+            val = elem.attrib[k]
+            if val.strip().startswith('http://') or val.strip().startswith('https://'):
+                if val in seen:
+                    elem.attrib[k] = ''
+                else:
+                    seen.add(val)
+        for child in elem:
+            dedup_elem(child)
+    dedup_elem(root)
+    tree.write(output_path, encoding='utf-8', xml_declaration=True)
+
+def deduplicate_html(path, output_path):
+    from html.parser import HTMLParser
+    seen = set()
+    # 只做简单 dedup，不做复杂DOM处理
+    with open(path, encoding='utf-8') as f:
+        lines = f.readlines()
+    result = []
+    for line in lines:
+        url_match = re.search(r'(http[s]?://[^\s\'"<>]+)', line)
+        if url_match:
+            url = url_match.group(1)
+            if url not in seen:
+                result.append(line)
+                seen.add(url)
+            else:
+                # 跳过重复行
+                continue
+        else:
+            result.append(line)
+    with open(output_path, 'w', encoding='utf-8') as f:
+        f.writelines(result)
+
+def main():
+    ensure_output_dir()
+    # 支持命令行参数单文件，也支持批量
+    if len(sys.argv) > 1:
+        files = [os.path.abspath(sys.argv[1])]
     else:
-        # For unsupported file types, just copy over
-        copyfile(path, output_path)
-        print(f"Copied {path} -> {output_path}")
+        files = list(find_files_from_config(CONFIG_FILE))
+    for file in files:
+        ext = os.path.splitext(file)[1].lower()
+        fname = os.path.basename(file)
+        out_path = os.path.join(OUTPUT_DIR, fname)
+        if ext in ['.txt', '.md']:
+            deduplicate_txt_md(file, out_path)
+            print(f"Processed {file} -> {out_path}")
+        elif ext == '.json':
+            deduplicate_json(file, out_path)
+            print(f"Processed {file} -> {out_path}")
+        elif ext == '.csv':
+            deduplicate_csv(file, out_path)
+            print(f"Processed {file} -> {out_path}")
+        elif ext == '.xml':
+            deduplicate_xml(file, out_path)
+            print(f"Processed {file} -> {out_path}")
+        elif ext in ['.html', '.htm']:
+            deduplicate_html(file, out_path)
+            print(f"Processed {file} -> {out_path}")
+        else:
+            print(f"File type not supported for {file}, skipping.")
 
 if __name__ == '__main__':
-    ensure_output_dir()
-    for file in find_files_from_config(CONFIG_FILE):
-        deduplicate_file(file)
+    main()
