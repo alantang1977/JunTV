@@ -1,44 +1,57 @@
 import os
+from pathlib import Path
 
-SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
-SOURCE_FILE = os.path.join(SCRIPT_DIR, "subscribe.txt")
-OUTPUT_DIR = os.path.join(SCRIPT_DIR, "deduped")
-OUTPUT_FILE = os.path.join(OUTPUT_DIR, "subscribe.txt")
+def deduplicate_subscribe():
+    # 定义源文件和输出文件的路径
+    source_file = Path("config/subscribe.txt")
+    output_dir = Path("config/deduped")
+    output_file = output_dir / "subscribe.txt"
 
-def is_http_link(line: str) -> bool:
-    return line.strip().startswith("http://") or line.strip().startswith("https://")
+    # 调试输出：显示源文件路径
+    print(f"源文件路径: {source_file.resolve()}")
+    print(f"输出文件路径: {output_file.resolve()}")
 
-def main():
-    print("====调试信息====")
-    print("当前脚本目录:", SCRIPT_DIR)
-    print("源文件路径:", SOURCE_FILE)
-    print("输出目录:", OUTPUT_DIR)
-    print("输出文件路径:", OUTPUT_FILE)
-
-    if not os.path.exists(SOURCE_FILE):
-        print("未找到源文件 subscribe.txt，请检查是否放在 config/ 下！")
+    # 检查源文件是否存在
+    if not source_file.exists():
+        print(f"错误：未找到源文件 {source_file}")
         return
 
-    seen = set()
-    output_lines = []
-    with open(SOURCE_FILE, encoding="utf-8") as f:
-        for line in f:
-            stripped = line.strip()
-            if is_http_link(stripped):
-                if stripped not in seen:
-                    output_lines.append(line)
-                    seen.add(stripped)
-            else:
-                output_lines.append(line)
+    # 读取源文件内容
+    try:
+        with open(source_file, 'r', encoding='utf-8') as f:
+            lines = f.readlines()
+    except Exception as e:
+        print(f"错误：读取文件时发生异常: {e}")
+        return
 
-    if not os.path.exists(OUTPUT_DIR):
-        print(f"输出目录 {OUTPUT_DIR} 不存在，正在创建...")
-        os.makedirs(OUTPUT_DIR)
+    # 去重处理
+    url_set = set()
+    deduped_lines = []
+    for line in lines:
+        line = line.rstrip('\n')  # 去除行尾换行符
+        if line.startswith(('http://', 'https://')):
+            if line not in url_set:
+                url_set.add(line)
+                deduped_lines.append(line)
+        else:
+            deduped_lines.append(line)
 
-    with open(OUTPUT_FILE, "w", encoding="utf-8") as f:
-        f.writelines(output_lines)
-    print(f"处理完成！共写入 {len(output_lines)} 行。")
-    print(f"去重结果已写入：{OUTPUT_FILE}")
+    # 创建输出目录（如果不存在）
+    output_dir.mkdir(parents=True, exist_ok=True)
+
+    # 写入去重后的内容到输出文件
+    try:
+        with open(output_file, 'w', encoding='utf-8') as f:
+            for line in deduped_lines:
+                f.write(line + '\n')
+    except Exception as e:
+        print(f"错误：写入文件时发生异常: {e}")
+        return
+
+    # 输出处理结果
+    print(f"处理完成！")
+    print(f"写入行数: {len(deduped_lines)}")
+    print(f"输出文件路径: {output_file.resolve()}")
 
 if __name__ == "__main__":
-    main()
+    deduplicate_subscribe()    
