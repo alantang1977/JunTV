@@ -1,0 +1,32 @@
+name: Deduplicate Links
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 12 * * *'  # 每天中午12点自动运行（UTC）
+
+jobs:
+  deduplicate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: 3.11
+
+      - name: Install dependencies
+        run: |
+          pip install --upgrade pip
+
+      - name: Run deduplication script
+        run: |
+          python config/deduplicate_links.py
+
+      - name: Upload deduped results
+        uses: actions/upload-artifact@v4
+        with:
+          name: deduped-links
+          path: config/deduped/
