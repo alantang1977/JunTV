@@ -3,27 +3,32 @@ name: Deduplicate Links
 on:
   workflow_dispatch:
   schedule:
-    - cron: '0 12 * * *'  # 每天中午12点自动运行（UTC）
+    - cron: '0 12 * * *'  # 每天中午12点（UTC）自动运行
 
 jobs:
   deduplicate:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout repo
+      - name: Checkout repository
         uses: actions/checkout@v4
+
+      - name: List config dir for debug
+        run: ls -l config
 
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: 3.11
+          python-version: '3.11'
 
       - name: Install dependencies
         run: |
           pip install --upgrade pip
 
       - name: Run deduplication script
-        run: |
-          python config/deduplicate_links.py
+        run: python config/deduplicate_links.py
+
+      - name: Show deduped results
+        run: ls -l config/deduped
 
       - name: Upload deduped results
         uses: actions/upload-artifact@v4
