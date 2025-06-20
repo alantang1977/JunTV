@@ -1,4 +1,4 @@
-name: Deduplicate Links
+name: Deduplicate Subscribe Links
 
 on:
   workflow_dispatch:
@@ -20,10 +20,6 @@ jobs:
         with:
           python-version: '3.11'
 
-      - name: Install dependencies
-        run: |
-          pip install --upgrade pip
-
       - name: Run deduplication script
         run: python config/deduplicate_links.py
 
@@ -33,5 +29,5 @@ jobs:
       - name: Upload deduped results
         uses: actions/upload-artifact@v4
         with:
-          name: deduped-links
-          path: config/deduped/
+          name: deduped-subscribe
+          path: config/deduped/subscribe.txt
