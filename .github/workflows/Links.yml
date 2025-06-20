@@ -1,33 +1,29 @@
-name: Deduplicate Subscribe Links
+name: Deduplicate subscribe.txt
 
 on:
   workflow_dispatch:
-  schedule:
-    - cron: '0 12 * * *'  # 每天中午12点（UTC）自动运行
 
 jobs:
-  deduplicate:
+  dedup:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout repository
+      - name: Checkout code
         uses: actions/checkout@v4
-
-      - name: List config dir for debug
-        run: ls -l config
 
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.11'
+          python-version: "3.x"
 
       - name: Run deduplication script
-        run: python config/deduplicate_links.py
+        run: python config/dedup_subscribe.py
 
-      - name: Show deduped results
-        run: ls -l config/deduped
+      - name: Show diff (optional)
+        run: |
+          git diff --color
 
-      - name: Upload deduped results
+      - name: Upload deduped file as artifact
         uses: actions/upload-artifact@v4
         with:
-          name: deduped-subscribe
-          path: config/deduped/subscribe.txt
+          name: deduped-subscribe-txt
+          path: deduped/subscribe.txt
