@@ -1,28 +1,47 @@
-name: Deduplicate subscribe.txt
+name: 去重订阅文件
 
 on:
   workflow_dispatch:
+    inputs:
+      commit_message:
+        description: '提交消息'
+        required: false
+        default: '自动更新去重后的订阅文件'
 
 jobs:
-  dedup:
+  deduplicate:
     runs-on: ubuntu-latest
+
     steps:
-      - name: Checkout code
+      - name: 检出代码
         uses: actions/checkout@v4
 
-      - name: Set up Python
+      - name: 设置Python环境
         uses: actions/setup-python@v5
         with:
-          python-version: "3.x"
+          python-version: '3.9'
 
-      - name: Run deduplication script
-        run: python config/dedup_subscribe.py
+      - name: 运行去重脚本
+        run: |
+          python config/dedup_subscribe.py
+          cat config/deduped/subscribe.txt
 
-      - name: Show diff (optional)
-        run: git diff --color
-
-      - name: Upload deduped file as artifact
+      - name: 上传去重后的文件
         uses: actions/upload-artifact@v4
         with:
-          name: deduped-subscribe-txt
+          name: deduped-subscribe
           path: config/deduped/subscribe.txt
+          retention-days: 7
+
+      - name: 提交并推送更改
+        if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add config/deduped/subscribe.txt
+          if git diff --staged --quiet; then
+            echo "没有更改需要提交"
+          else
+            git commit -m "${{ github.event.inputs.commit_message }}"
+            git push
+          fi    
