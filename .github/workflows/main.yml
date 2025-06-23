@@ -2,7 +2,7 @@ name: 'Update schedule'
 
 on:
   schedule:
-    - cron: '0 22,10 * * *'
+    - cron: '55 0 */2 * *'  # 每2天凌晨00点55分执行任务（上海时区的UTC时间）
   workflow_dispatch:
     branches:
       - main
