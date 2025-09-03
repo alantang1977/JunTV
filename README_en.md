@@ -30,7 +30,7 @@ other features, under development...
 
 💖 [Channel Alias Collection Plan](https://github.com/Guovin/iptv-api/discussions/1082)
 
-- [✅ Features](#features)
+- [✅ Core Features](#core-features)
 - [🔗 Latest results](#latest-results)
 - [⚙️ Config parameter](#Config)
 - [🚀 Quick Start](#quick-start)
@@ -69,20 +69,21 @@ other features, under development...
 
 </details>
 
-## Features
+## Core Features
 
-- ✅ Customizable templates, support for aliases, and generation of desired channels
-- ✅ Supports RTMP streaming (live/hls) to enhance playback experience
-- ✅ Supports multiple source acquisition methods: local source, multicast source, hotel source, subscription source,
-  keyword search
-- ✅ Support for playback interface retrieval and generation
-- ✅ Supports EPG functionality, displaying channel preview content
-- ✅ Interface speed verification, obtain delay, speed, resolution, filter invalid interface
-- ✅ Preferences: IPv4, IPv6, interface source sorting priority and quantity configuration, whitelist, blacklist,
-  location, and ISP filtering
-- ✅ Scheduled execution at 6:00 AM and 18:00 PM Beijing time daily
-- ✅ Supports various execution methods: workflows, command line, GUI software, Docker(amd64/arm64/arm v7)
-- ✨ For more features, see [Config parameter](#Config)
+| Feature                               | Status | Description                                                                                                |
+|:--------------------------------------|:------:|:-----------------------------------------------------------------------------------------------------------|
+| **Custom Templates**                  |   ✅    | Generate personalized channels as you wish                                                                 |
+| **Channel Aliases**                   |   ✅    | Improve channel result acquisition and accuracy                                                            |
+| **Multiple Source Types**             |   ✅    | Supports local sources, multicast, hotel sources, subscriptions, and keyword search                        |
+| **RTMP Streaming**                    |   ✅    | Supports Live and HLS modes to enhance live playback experience                                            |
+| **Playback Interfaces**               |   ✅    | Supports acquisition and generation of playback interfaces                                                 |
+| **EPG (Electronic Program Guide)**    |   ✅    | Displays channel preview content                                                                           |
+| **Interface Speed Test & Validation** |   ✅    | Measures latency, speed, resolution, and filters invalid interfaces                                        |
+| **Advanced Preferences**              |   ✅    | IPv4/IPv6, interface sorting priority, quantity configuration, blacklist/whitelist, region & ISP filtering |
+| **Scheduled Tasks**                   |   ✅    | Automatically updates at 6:00 and 18:00 Beijing time daily by default; customizable schedule               |
+| **Multiple Run Modes**                |   ✅    | Supports workflow, CLI, GUI software, Docker (amd64/arm64/arm v7)                                          |
+| **More Features**                     |   ✨    | See [Configuration Parameters](#Config) section for details                                                |
 
 ## Latest results
 
