@@ -22,8 +22,7 @@ from utils.speed import (
     get_speed,
     get_speed_result,
     get_sort_result,
-    check_ffmpeg_installed_status,
-    logger as speed_test_logger
+    check_ffmpeg_installed_status
 )
 from utils.tools import (
     format_name,
@@ -56,6 +55,7 @@ min_resolution_value = config.min_resolution_value
 open_history = config.open_history
 open_local = config.open_local
 open_rtmp = config.open_rtmp
+retain_origin = ["whitelist", "live", "hls"]
 
 
 def format_channel_data(url: str, origin: OriginType) -> ChannelData:
@@ -112,31 +112,34 @@ def get_channel_data_from_file(channels, file, whitelist, open_local=config.open
                 category_dict = channels[current_category]
                 if name not in category_dict:
                     category_dict[name] = []
-                if name in whitelist:
-                    for whitelist_url in whitelist[name]:
-                        category_dict[name].append(format_channel_data(whitelist_url, "whitelist"))
-                if live_data and name in live_data:
-                    for live_url in live_data[name]:
-                        category_dict[name].append(format_channel_data(live_url, "live"))
-                if hls_data and name in hls_data:
-                    for hls_url in hls_data[name]:
-                        category_dict[name].append(format_channel_data(hls_url, "hls"))
-                if open_local:
-                    if url:
-                        category_dict[name].append(format_channel_data(url, "local"))
-                    if local_data:
+                    if name in whitelist:
+                        for whitelist_url in whitelist[name]:
+                            category_dict[name].append(format_channel_data(whitelist_url, "whitelist"))
+                    if live_data and name in live_data:
+                        for live_url in live_data[name]:
+                            category_dict[name].append(format_channel_data(live_url, "live"))
+                    if hls_data and name in hls_data:
+                        for hls_url in hls_data[name]:
+                            category_dict[name].append(format_channel_data(hls_url, "hls"))
+                    if open_local and local_data:
                         alias_names = channel_alias.get(name)
                         alias_names.update([name, format_name(name)])
                         for alias_name in alias_names:
                             if alias_name in local_data:
                                 for local_url in local_data[alias_name]:
                                     category_dict[name].append(format_channel_data(local_url, "local"))
-                            elif '*' in alias_name:
-                                pattern = '^' + re.escape(alias_name).replace('\\*', '.*') + '$'
-                                for local_name in local_data:
-                                    if re.match(pattern, local_name):
-                                        for local_url in local_data[local_name]:
-                                            category_dict[name].append(format_channel_data(local_url, "local"))
+                            elif alias_name.startswith("re:"):
+                                raw_pattern = alias_name[3:]
+                                try:
+                                    pattern = re.compile(raw_pattern)
+                                    for local_name in local_data:
+                                        if re.match(pattern, local_name):
+                                            for local_url in local_data[local_name]:
+                                                category_dict[name].append(format_channel_data(local_url, "local"))
+                                except re.error:
+                                    pass
+                if open_local and url:
+                    category_dict[name].append(format_channel_data(url, "local"))
     return channels
 
 
@@ -153,7 +156,6 @@ def get_channel_items() -> CategoryChannelData:
         hls_data = get_name_uri_from_dir(constants.hls_path)
     local_data = get_name_urls_from_file(config.local_file)
     whitelist = get_name_urls_from_file(constants.whitelist_path)
-    whitelist_urls = get_urls_from_file(constants.whitelist_path)
     whitelist_len = len(list(whitelist.keys()))
     if whitelist_len:
         print(f"Found {whitelist_len} channel in whitelist")
@@ -182,11 +184,10 @@ def get_channel_items() -> CategoryChannelData:
                                     for info in old_result[cate][name]:
                                         if info:
                                             try:
+                                                if info["origin"] in retain_origin:
+                                                    continue
                                                 if check_channel_need_frozen(info):
                                                     frozen_channels.add(info["url"])
-                                                    continue
-                                                if info["origin"] == "whitelist" and not any(
-                                                        url in info["url"] for url in whitelist_urls):
                                                     continue
                                             except:
                                                 pass
@@ -195,7 +196,7 @@ def get_channel_items() -> CategoryChannelData:
 
                                     if not channel_data:
                                         for info in old_result[cate][name]:
-                                            if info and info["url"] not in urls:
+                                            if info and info["origin"] not in retain_origin and info["url"] not in urls:
                                                 channel_data.append(info)
                                                 frozen_channels.discard(info["url"])
 
@@ -563,7 +564,7 @@ def append_data_to_info_data(
             catchup = item.get("catchup")
             extra_info = item.get("extra_info", "")
 
-            if not url:
+            if not url or url in existing_urls:
                 continue
 
             if url_origin != "whitelist" and whitelist and check_url_by_keywords(url, whitelist):
@@ -572,9 +573,8 @@ def append_data_to_info_data(
             if not url_origin:
                 continue
 
-            if url_origin not in ["whitelist", "live", "hls"]:
-                if (url in frozen_channels or (url in existing_urls and not headers) or
-                        check_url_by_keywords(url, blacklist)):
+            if url_origin not in retain_origin:
+                if url in frozen_channels or check_url_by_keywords(url, blacklist):
                     continue
 
                 if not ipv_type:
@@ -767,6 +767,7 @@ async def test_speed(data, ipv6=False, callback=None):
     open_headers = config.open_headers
     get_resolution = config.open_filter_resolution and check_ffmpeg_installed_status()
     semaphore = asyncio.Semaphore(config.speed_test_limit)
+    logger = get_logger(constants.speed_test_log_path, level=INFO, init=True)
 
     async def limited_get_speed(channel_info):
         """
@@ -779,6 +780,7 @@ async def test_speed(data, ipv6=False, callback=None):
                 headers=headers,
                 ipv6_proxy=ipv6_proxy_url,
                 filter_resolution=get_resolution,
+                logger=logger,
                 callback=callback,
             )
 
@@ -795,7 +797,7 @@ async def test_speed(data, ipv6=False, callback=None):
 
     results = await asyncio.gather(*tasks)
 
-    speed_test_logger.handlers.clear()
+    logger.handlers.clear()
 
     grouped_results = {}
 
@@ -823,7 +825,7 @@ def sort_channel_result(channel_data, result=None, filter_host=False, ipv6_suppo
             whitelist_result = []
             test_result = result.get(cate, {}).get(name, []) if result else []
             for value in values:
-                if value["origin"] in ["whitelist", "live", "hls"] or (
+                if value["origin"] in retain_origin or (
                         not ipv6_support and result and value["ipv_type"] == "ipv6"
                 ):
                     whitelist_result.append(value)
