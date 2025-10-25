@@ -599,41 +599,6 @@ def append_data_to_info_data(
                 if isp and isp_list and not any(item in isp for item in isp_list):
                     continue
 
-                host_exist = False
-                for idx, info in enumerate(channel_list):
-                    if not info.get("url"):
-                        continue
-
-                    info_host = get_url_host(info["url"])
-                    if info_host == host:
-                        host_exist = True
-                        info_url = info["url"]
-                        # Replace if new URL is longer or has headers
-                        if len(info_url) < len(url) or headers:
-                            if info_url in existing_urls:
-                                existing_urls.remove(info_url)
-                            existing_urls.add(url)
-                            channel_list[idx] = {
-                                "id": channel_id,
-                                "url": url,
-                                "host": host,
-                                "date": date,
-                                "delay": delay,
-                                "speed": speed,
-                                "resolution": resolution,
-                                "origin": origin,
-                                "ipv_type": ipv_type,
-                                "location": location,
-                                "isp": isp,
-                                "headers": headers,
-                                "catchup": catchup,
-                                "extra_info": extra_info
-                            }
-                        break
-                    continue
-                if host_exist:
-                    continue
-
             channel_list.append({
                 "id": channel_id,
                 "url": url,

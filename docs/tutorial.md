@@ -2,7 +2,12 @@
 
 [English](./tutorial_en.md) | 中文
 
-IPTV-API是一个可高度自定义的IPTV接口更新项目📺，自定义频道菜单，自动获取直播源，测速验效后生成可用的结果，可实现『✨秒播级体验🚀』
+<div align="center">
+  <img src="../static/images/logo.png" alt="logo"/>
+  <h1 align="center">IPTV-API</h1>
+</div>
+
+📺IPTV直播源自动更新平台，『✨全自动化采集、筛选、测速流程🚀』，支持丰富的个性化配置，生成结果输入播放器即可观看
 
 以下一共4种安装运行方式，选择一种适合您的即可
 

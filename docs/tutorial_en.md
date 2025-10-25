@@ -2,9 +2,13 @@
 
 [中文](./tutorial.md) | English
 
-IPTV-API is a highly customizable IPTV interface update project 📺, allowing you to customize channel menus,
-automatically obtain live sources, and generate available results after speed testing and validation, achieving a 『✨
-instant playback experience 🚀』.
+<div align="center">
+  <img src="../static/images/logo.png" alt="logo"/>
+  <h1 align="center">IPTV-API</h1>
+</div>
+
+📺IPTV automatic live-source updater with ✨fully automated collection, filtering and speed-testing workflow 🚀 — supports
+extensive customization; load the generated results into your player to watch.
 
 There are four installation and operation methods in total, choose the one that suits you.
 
