@@ -7,8 +7,8 @@
   <h1 align="center">IPTV-API</h1>
 </div>
 
-📺IPTV automatic live-source updater with ✨fully automated collection, filtering and speed-testing workflow 🚀 — supports
-extensive customization; load the generated results into your player to watch.
+📺 IPTV live-source auto-update platform — 『🤖 Fully automated collection, filtering, speed-testing, and generation
+pipeline 🚀』 — supports extensive customization; enter the result URL into a player to watch
 
 There are four installation and operation methods in total, choose the one that suits you.
 
