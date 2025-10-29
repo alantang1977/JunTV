@@ -3,7 +3,7 @@
   <h1 align="center">IPTV-API</h1>
 </div>
 
-📺IPTV直播源自动更新平台，『🤖全自动采集、筛选、测速、生成流程🚀』，支持丰富的个性化配置，结果地址输入播放器即可观看
+📺IPTV直播源自动更新平台，『🤖全自动采集、筛选、测速、生成流程🚀』，支持丰富的个性化配置，将结果地址输入播放器即可观看
 
 <p align="center">
   <br>
@@ -50,7 +50,7 @@
 - [📖 详细教程](./docs/tutorial.md)
 - [🗓️ 更新日志](./CHANGELOG.md)
 - [❤️ 赞赏](#赞赏)
-- [👀 关注公众号](#关注)
+- [👀 关注](#关注)
 - [⭐️ Star统计](#Star统计)
 - [📣 免责声明](#免责声明)
 - [⚖️ 许可证](#许可证)
@@ -360,6 +360,12 @@ docker run -d -p 8000:8000 guovern/iptv-api
 | ![支付宝扫码](./static/images/alipay.jpg) | ![微信扫码](./static/images/appreciate.jpg) |
 
 ## 关注
+
+### Github
+
+关注我的Github账号[Guovin](https://github.com/Guovin)，获取更多实用项目
+
+### 微信公众号
 
 微信公众号搜索 Govin，或扫码，接收更新推送、学习更多使用技巧：
 

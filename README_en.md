@@ -3,8 +3,8 @@
   <h1 align="center">IPTV-API</h1>
 </div>
 
-📺 IPTV live-source auto-update platform — 『🤖 Fully automated collection, filtering, speed-testing, and generation
-pipeline 🚀』 — supports extensive customization; enter the result URL into a player to watch
+📺 IPTV live-source auto-update platform — 🤖 fully automated collection, filtering, speed-testing, and generation
+pipeline 🚀. Supports extensive customization; paste the resulting URL into your player to watch
 
 <p align="center">
     <br>
@@ -52,7 +52,7 @@ other features, under development...
 - [📖 Detailed Tutorial](./docs/tutorial_en.md)
 - [🗓️ Changelog](./CHANGELOG.md)
 - [❤️ Appreciate](#appreciate)
-- [👀 Follow the public account](#follow)
+- [👀 Follow](#follow)
 - [⭐️ Star History](#star-history)
 - [📣 Disclaimer](#disclaimer)
 - [⚖️ License](#license)
@@ -370,7 +370,13 @@ Taking the host path /etc/docker as an example:
 
 ## Follow
 
-Wechat public account search for Govin, or scan the code to receive updates and learn more tips:
+### GitHub
+
+Follow my GitHub account [Guovin](https://github.com/Guovin) to find more useful projects
+
+### WeChat public account
+
+WeChat public account search for Govin, or scan the code to receive updates and learn more tips:
 
 ![Wechat public account](./static/images/qrcode.jpg)
 
