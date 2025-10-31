@@ -2,6 +2,7 @@ import configparser
 import os
 import re
 import shutil
+import socket
 import sys
 
 
@@ -314,7 +315,27 @@ class ConfigManager:
 
     @property
     def app_host(self):
-        return os.getenv("APP_HOST") or self.config.get("Settings", "app_host", fallback="http://localhost")
+        env = os.getenv("APP_HOST")
+        if env:
+            return env
+        cfg = self.config.get("Settings", "app_host", fallback="http://localhost")
+        if cfg and cfg != "http://localhost":
+            return cfg
+        try:
+            s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+            try:
+                s.connect(("8.8.8.8", 80))
+                ip = s.getsockname()[0]
+            finally:
+                s.close()
+            if ip and not ip.startswith("127."):
+                scheme = "http"
+                if "://" in cfg:
+                    scheme = cfg.split("://", 1)[0]
+                return f"{scheme}://{ip}"
+        except Exception:
+            pass
+        return cfg
 
     @property
     def app_port(self):
@@ -418,9 +439,13 @@ class ConfigManager:
     def override_config_with_env(self):
         for section in self.config.sections():
             for key in self.config[section]:
-                env_val = os.getenv(key)
-                if env_val is not None:
-                    self.config.set(section, key, env_val)
+                section_key = f"{section}_{key}"
+                candidates = (key, key.upper(), section_key, section_key.upper())
+                for env_name in candidates:
+                    env_val = os.getenv(env_name)
+                    if env_val is not None:
+                        self.config.set(section, key, env_val)
+                        break
 
     def set(self, section, key, value):
         """

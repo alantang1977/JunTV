@@ -9,6 +9,7 @@ from tqdm.asyncio import tqdm_asyncio
 import utils.constants as constants
 from utils.channel import format_channel_name
 from utils.config import config
+from utils.requests.tools import get_soup_requests, close_session
 from utils.retry import retry_func
 from utils.tools import (
     merge_objects,
@@ -66,13 +67,13 @@ async def get_channels_by_subscribe_urls(
             try:
                 response = (
                     retry_func(
-                        lambda: session.get(
+                        lambda: get_soup_requests(
                             subscribe_url, timeout=config.request_timeout
                         ),
                         name=subscribe_url,
                     )
                     if retry
-                    else session.get(subscribe_url, timeout=config.request_timeout)
+                    else get_soup_requests(subscribe_url, timeout=config.request_timeout)
                 )
             except exceptions.Timeout:
                 print(f"Timeout on subscribe: {subscribe_url}")
@@ -124,7 +125,7 @@ async def get_channels_by_subscribe_urls(
             if error_print:
                 print(f"Error on {subscribe_url}: {e}")
         finally:
-            session.close()
+            close_session()
             logger.handlers.clear()
             pbar.update()
             remain = subscribe_urls_len - pbar.n

@@ -42,7 +42,7 @@
 - [🔗 最新结果](#最新结果)
 - [⚙️ 配置参数](#配置)
 - [🚀 快速上手](#快速上手)
-    - [目录说明](#目录说明)
+    - [配置与结果目录](#配置与结果目录)
     - [工作流](#工作流)
     - [命令行](#命令行)
     - [GUI软件](#GUI-软件)
@@ -128,7 +128,7 @@ https://raw.githubusercontent.com/Guovin/iptv-api/gd/source.json
 ## 配置
 
 > [!NOTE]\
-> 以下配置项位于`config/config.ini`文件中，支持通过配置文件或环境变量(配置项同名)实现修改，修改保存后重启即可生效
+> 以下配置项位于`config/config.ini`文件中，支持通过配置文件或环境变量进行修改，修改保存后重启即可生效
 
 | 配置项                    | 描述                                                                                                                                                                    | 默认值               |
 |:-----------------------|:----------------------------------------------------------------------------------------------------------------------------------------------------------------------|:------------------|
@@ -158,6 +158,7 @@ https://raw.githubusercontent.com/Guovin/iptv-api/gd/source.json
 | open_use_cache         | 开启使用本地缓存数据，适用于查询请求失败场景（仅针对酒店源与组播源）                                                                                                                                    | True              |
 | open_history           | 开启使用历史更新结果（包含模板与结果文件的接口），合并至本次更新中                                                                                                                                     | True              |
 | open_headers           | 开启使用M3U内含的请求头验证信息，用于测速等操作，注意：只有个别播放器支持播放这类含验证信息的接口，默认为关闭                                                                                                              | False             |
+| app_host               | 页面服务Host地址，默认使用本机IP                                                                                                                                                   |                   |
 | app_port               | 页面服务端口，用于控制页面服务的端口号                                                                                                                                                   | 8000              |
 | cdn_url                | CDN代理加速地址，用于订阅源、频道图标等资源的加速访问                                                                                                                                          |                   |
 | final_file             | 生成结果文件路径                                                                                                                                                              | output/result.txt |
@@ -198,34 +199,35 @@ https://raw.githubusercontent.com/Guovin/iptv-api/gd/source.json
 
 ## 快速上手
 
-### 目录说明
+### 配置与结果目录
 
-| 目录路径                      | 说明                  |
-|:--------------------------|:--------------------|
-| config                    | 配置文件目录，包含配置文件、模板文件等 |
-| config/config.ini         | 配置参数文件              |
-| config/rtp                | 各地区运营商组播源ip         |
-| config/demo.txt           | 频道模板                |
-| config/alias.txt          | 频道别名                |
-| config/blacklist.txt      | 接口黑名单               |
-| config/whitelist.txt      | 接口白名单               |
-| config/subscribe.txt      | 频道订阅源列表             |
-| config/local.txt          | 本地源文件               |
-| config/epg.txt            | EPG订阅源列表            |
-| output                    | 结果文件目录，包含生成的结果文件等   |
-| output/data               | 结果数据缓存目录            |
-| output/epg                | EPG结果目录             |
-| output/ipv4               | IPv4结果目录            |
-| output/ipv6               | IPv6结果目录            |
-| output/result(.m3u/txt)   | m3u/txt结果           |
-| output/live(.m3u/txt)     | RTMP推流live结果        |
-| output/hls(.m3u/txt)      | RTMP推流hls结果         |
-| output/log                | 日志文件目录              |
-| output/log/result.log     | 有效结果日志              |
-| output/log/speed_test.log | 测速日志                |
-| output/log/statistic.log  | 统计结果日志              |
-| output/log/nomatch.log    | 未匹配频道记录             |
-| source.json               | 点播源配置文件             |
+```
+iptv-api/                  # 项目根目录
+├── config                 # 配置文件目录，包含配置文件、模板文件等
+│   └── config.ini         # 配置参数文件
+│   └── rtp                # 各地区运营商组播源ip
+│   └── demo.txt           # 频道模板
+│   └── alias.txt          # 频道别名
+│   └── blacklist.txt      # 接口黑名单
+│   └── whitelist.txt      # 接口白名单
+│   └── subscribe.txt      # 频道订阅源列表
+│   └── local.txt          # 本地源文件
+│   └── epg.txt            # EPG订阅源列表
+├── output                 # 结果文件目录，包含生成的结果文件等
+│   └── data               # 结果数据缓存目录
+│   └── epg                # EPG结果目录
+│   └── ipv4               # IPv4结果目录
+│   └── ipv6               # IPv6结果目录
+│   └── result.m3u/txt     # m3u/txt结果
+│   └── live.m3u/txt       # RTMP live推流结果
+│   └── hls.m3u/txt        # RTMP hls推流结果
+│   └── log                # 日志文件目录
+│       └── result.log     # 有效结果日志
+│       └── speed_test.log # 测速日志
+│       └── statistic.log  # 统计结果日志
+│       └── nomatch.log    # 未匹配频道记录
+└── source.json            # 点播源配置文件
+```
 
 ### 工作流
 
@@ -298,10 +300,12 @@ docker run -d -p 8000:8000 guovern/iptv-api
 
 ##### 环境变量：
 
-| 变量       | 描述                 | 默认值                |
-|:---------|:-------------------|:-------------------|
-| APP_HOST | 服务host地址，可修改使用公网域名 | "http://localhost" |
-| APP_PORT | 服务端口               | 8000               |
+| 变量       | 描述                 | 默认值  |
+|:---------|:-------------------|:-----|
+| APP_HOST | 服务host地址，可修改使用公网域名 | 本机IP |
+| APP_PORT | 服务端口               | 8000 |
+
+除了以上环境变量，还支持通过环境变量覆盖配置文件中的[配置项](#配置)
 
 #### 3. 更新结果
 
