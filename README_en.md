@@ -379,7 +379,7 @@ WeChat public account search for Govin, or scan the code to receive updates and 
 
 ## Star History
 
-[![Star History Chart](https://api.star-history.com/svg?repos=Guovin/iptv-api&type=Date)](https://star-history.com/#Guovin/iptv-api&Date)
+[![Star History Chart](https://starchart.cc/Guovin/iptv-api.svg?variant=adaptive)](https://starchart.cc/Guovin/iptv-api)
 
 ## Donations
 

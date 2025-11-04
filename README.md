@@ -369,7 +369,7 @@ docker run -d -p 8000:8000 guovern/iptv-api
 
 ## Star统计
 
-[![Star统计](https://api.star-history.com/svg?repos=Guovin/iptv-api&type=Date)](https://star-history.com/#Guovin/iptv-api&Date)
+[![Star统计](https://starchart.cc/Guovin/iptv-api.svg?variant=adaptive)](https://starchart.cc/Guovin/iptv-api)
 
 ## 捐赠
 

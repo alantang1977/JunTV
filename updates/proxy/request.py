@@ -6,7 +6,7 @@ from tqdm.asyncio import tqdm_asyncio
 
 from utils.config import config
 from utils.driver.tools import get_soup_driver
-from utils.requests.tools import get_soup_requests, close_session
+from utils.requests.tools import get_soup_requests
 from utils.retry import retry_func
 from utils.speed import get_delay_requests
 
@@ -56,8 +56,6 @@ def get_proxy_list(page_count=1):
         futures = [executor.submit(get_proxy, url) for url in urls]
         for future in futures:
             proxy_list.extend(future.result())
-    if not open_driver:
-        close_session()
     pbar.close()
     return proxy_list
 

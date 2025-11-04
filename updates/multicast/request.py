@@ -21,7 +21,7 @@ from utils.channel import (
 from utils.config import config
 from utils.driver.setup import setup_driver
 from utils.driver.tools import search_submit
-from utils.requests.tools import get_soup_requests, close_session
+from utils.requests.tools import get_soup_requests
 from utils.retry import (
     retry_func,
     find_clickable_element_with_retry,
@@ -202,6 +202,4 @@ async def get_channels_by_multicast(names, callback=None):
             name_region_type_result, search_region_type_result
         )
         channels = merge_objects(channels, request_channels)
-        if not open_driver:
-            close_session()
     return channels

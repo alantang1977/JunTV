@@ -9,7 +9,7 @@ from tqdm.asyncio import tqdm_asyncio
 import utils.constants as constants
 from utils.channel import format_channel_name
 from utils.config import config
-from utils.requests.tools import get_soup_requests, close_session
+from utils.requests.tools import get_soup_requests
 from utils.retry import retry_func
 from utils.tools import (
     merge_objects,
@@ -125,7 +125,6 @@ async def get_channels_by_subscribe_urls(
             if error_print:
                 print(f"Error on {subscribe_url}: {e}")
         finally:
-            close_session()
             logger.handlers.clear()
             pbar.update()
             remain = subscribe_urls_len - pbar.n

@@ -10,24 +10,27 @@ headers = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36",
 }
 
-session = requests.Session()
-
 
 def get_source_requests(url, data=None, proxy=None, timeout=30):
     """
     Get the source by requests
     """
-    proxies = {"http": proxy}
-    if data:
-        response = session.post(
-            url, headers=headers, data=data, proxies=proxies, timeout=timeout
-        )
-    else:
-        response = session.get(url, headers=headers, proxies=proxies, timeout=timeout)
+    proxies = {"http": proxy} if proxy is not None else None
+    response = None
+    try:
+        with requests.Session() as session:
+            if data:
+                response = session.post(
+                    url, headers=headers, data=data, proxies=proxies, timeout=timeout
+                )
+            else:
+                response = session.get(url, headers=headers, proxies=proxies, timeout=timeout)
+    except requests.RequestException:
+        return ""
     source = re.sub(
         r"<!--.*?-->",
         "",
-        response.text,
+        response.text if response is not None else "",
         flags=re.DOTALL,
     )
     return source
@@ -40,10 +43,3 @@ def get_soup_requests(url, data=None, proxy=None, timeout=30):
     source = get_source_requests(url, data, proxy, timeout)
     soup = BeautifulSoup(source, "html.parser")
     return soup
-
-
-def close_session():
-    """
-    Close the requests session
-    """
-    session.close()

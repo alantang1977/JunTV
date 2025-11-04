@@ -12,7 +12,7 @@ import updates.fofa.fofa_map as fofa_map
 import utils.constants as constants
 from utils.channel import format_channel_name
 from utils.config import config
-from utils.requests.tools import get_source_requests, close_session
+from utils.requests.tools import get_source_requests
 from utils.retry import retry_func
 from utils.tools import merge_objects, get_pbar_remaining, resource_path
 
@@ -179,8 +179,6 @@ async def get_channels_by_fofa(urls=None, multicast=False, callback=None):
                 f"正在获取Fofa{mode_name}源",
                 100,
             )
-        if not open_driver:
-            close_session()
         pbar.close()
     return fofa_results
 
