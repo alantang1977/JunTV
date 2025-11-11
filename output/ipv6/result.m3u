@@ -1,5 +1,5 @@
 #EXTM3U x-tvg-url="https://raw.githubusercontent.com/alantang1977/JunTV/refs/heads/main/output/epg/epg.gz"
-#EXTINF:-1 tvg-name="广州综合" tvg-logo="https://raw.githubusercontent.com/fanmingming/live/main/tv/广州综合.png" group-title="🕘️更新时间",2025-11-11 06:21:17
+#EXTINF:-1 tvg-name="广州综合" tvg-logo="https://raw.githubusercontent.com/fanmingming/live/main/tv/广州综合.png" group-title="🕘️更新时间",2025-11-11 18:22:50
 http://php.jdshipin.com:8880/gztv.php?id=zhonghe
 #EXTINF:-1 tvg-name="广州综合" tvg-logo="https://raw.githubusercontent.com/fanmingming/live/main/tv/广州综合.png" group-title="🍄┃广东频道",广州综合
 http://php.jdshipin.com:8880/gztv.php?id=zhonghe
@@ -1977,6 +1977,8 @@ https://www.youtube.com/watch?v=TCnaIE_SAtM
 https://smart.pendy.dpdns.org/Smart.php?id=ftvtaiwan_twn
 #EXTINF:-1 tvg-name="民视台湾台" tvg-logo="https://raw.githubusercontent.com/fanmingming/live/main/tv/民视台湾台.png" group-title="🅱┃台湾频道",民视台湾台
 https://hls-gateway.vpstv.net/streams/476244.m3u8
+#EXTINF:-1 tvg-name="HBO_HITS" tvg-logo="https://raw.githubusercontent.com/fanmingming/live/main/tv/HBO_HITS.png" group-title="🅱┃台湾频道",HBO_HITS
+https://smart.pendy.dpdns.org/Smart.php?id=hbohit_twn
 #EXTINF:-1 tvg-name="三立都会台" tvg-logo="https://raw.githubusercontent.com/fanmingming/live/main/tv/三立都会台.png" group-title="🅱┃台湾频道",三立都会台
 https://hls-gateway.vpstv.net/streams/476232.m3u8
 #EXTINF:-1 tvg-name="CINEMAX" tvg-logo="https://raw.githubusercontent.com/fanmingming/live/main/tv/CINEMAX.png" group-title="🅱┃台湾频道",CINEMAX
