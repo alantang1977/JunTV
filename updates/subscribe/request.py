@@ -3,7 +3,6 @@ from concurrent.futures import ThreadPoolExecutor
 from logging import INFO
 from time import time
 
-from requests import Session, exceptions
 from tqdm.asyncio import tqdm_asyncio
 
 import utils.constants as constants
@@ -27,6 +26,7 @@ async def get_channels_by_subscribe_urls(
         retry=True,
         error_print=True,
         whitelist=None,
+        pbar_desc="Processing subscribe",
         callback=None,
 ):
     """
@@ -38,7 +38,7 @@ async def get_channels_by_subscribe_urls(
     subscribe_urls_len = len(urls)
     pbar = tqdm_asyncio(
         total=subscribe_urls_len,
-        desc=f"Processing subscribe {'for multicast' if multicast else ''}",
+        desc=pbar_desc,
     )
     start_time = time()
     mode_name = "组播" if multicast else "酒店" if hotel else "订阅"
@@ -61,7 +61,6 @@ async def get_channels_by_subscribe_urls(
             subscribe_url = subscribe_info
         channels = defaultdict(lambda: defaultdict(lambda: defaultdict(list)))
         in_whitelist = whitelist and (subscribe_url in whitelist)
-        session = Session()
         try:
             response = None
             try:
@@ -75,8 +74,8 @@ async def get_channels_by_subscribe_urls(
                     if retry
                     else get_soup_requests(subscribe_url, timeout=config.request_timeout)
                 )
-            except exceptions.Timeout:
-                print(f"Timeout on subscribe: {subscribe_url}")
+            except Exception as e:
+                print(f"{subscribe_url}: {e}")
             if response:
                 response.encoding = "utf-8"
                 content = response.text

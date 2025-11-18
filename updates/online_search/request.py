@@ -44,6 +44,7 @@ async def get_channels_by_online_search(names, callback=None):
     def process_channel_by_online_search(name):
         info_list = []
         driver = None
+        page_soup = None
         try:
             if open_driver:
                 driver = setup_driver()
@@ -52,13 +53,13 @@ async def get_channels_by_online_search(names, callback=None):
                         lambda: driver.get(pageUrl), name=f"online search:{name}"
                     )
                 except Exception as e:
+                    print(e)
                     driver.close()
                     driver.quit()
                     driver = setup_driver()
                     driver.get(pageUrl)
                 search_submit(driver, name)
             else:
-                page_soup = None
                 request_url = f"{pageUrl}?s={name}"
                 try:
                     page_soup = retry_func(
@@ -66,7 +67,7 @@ async def get_channels_by_online_search(names, callback=None):
                         name=f"online search:{name}",
                     )
                 except Exception as e:
-                    page_soup = get_soup_requests(request_url)
+                    print(e)
                 if not page_soup:
                     print(f"{name}:Request fail.")
                     return

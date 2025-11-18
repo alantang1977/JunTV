@@ -74,6 +74,8 @@ async def get_channels_by_multicast(names, callback=None):
             name = f"{region}{type}"
             info_list = []
             driver = None
+            page_soup = None
+            code = None
             try:
                 if open_driver:
                     driver = setup_driver()
@@ -82,22 +84,21 @@ async def get_channels_by_multicast(names, callback=None):
                             lambda: driver.get(pageUrl), name=f"multicast search:{name}"
                         )
                     except Exception as e:
+                        print(e)
                         driver.close()
                         driver.quit()
                         driver = setup_driver()
                         driver.get(pageUrl)
                     search_submit(driver, name)
                 else:
-                    page_soup = None
                     post_form = {"saerch": name}
-                    code = None
                     try:
                         page_soup = retry_func(
                             lambda: get_soup_requests(pageUrl, data=post_form),
                             name=f"multicast search:{name}",
                         )
                     except Exception as e:
-                        page_soup = get_soup_requests(pageUrl, data=post_form)
+                        print(e)
                     if not page_soup:
                         print(f"{name}:Request fail.")
                         return {"region": region, "type": type, "data": info_list}

@@ -130,6 +130,6 @@ ipv6_proxy = "http://www.ipv6proxy.net/go.php?u="
 
 foodie_url = "http://www.foodieguide.com/iptvsearch/"
 
-foodie_hotel_url = "http://www.foodieguide.com/iptvsearch/hoteliptv.php"
+foodie_hotel_url = "http://www.foodieguide.com/iptvsearch/iptvhotel.php"
 
 waiting_tip = "📄结果将在更新完成后生成，请耐心等待..."
