@@ -21,7 +21,7 @@
     <img src="https://img.shields.io/github/downloads/guovin/iptv-api/total?label=GUI%20Downloads" />
   </a>
   <a href="https://hub.docker.com/repository/docker/guovern/iptv-api">
-    <img src="https://img.shields.io/docker/pulls/guovern/iptv-api?label=Pulls" />
+    <img src="https://img.shields.io/docker/pulls/guovern/iptv-api?label=Docker%20Pulls" />
   </a>
   <a href="https://github.com/Guovin/iptv-api/fork">
     <img src="https://img.shields.io/github/forks/guovin/iptv-api?label=Forks" />
