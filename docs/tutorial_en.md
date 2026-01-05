@@ -61,6 +61,10 @@ This is because some files conflict with the default files of the main repositor
 latest code.
 ![Conflict resolution](./images/conflict.png 'Conflict resolution')
 
+> [!IMPORTANT]
+> To avoid conflicts when updating the code later, it is recommended to copy files in the `config` directory and rename
+> them by adding the `user_` prefix before modifying.
+
 ### Modify Template
 
 When you click to confirm creation in step one, you will automatically jump to your personal repository after success.
@@ -127,16 +131,14 @@ Adjust the configuration as needed, here is the default configuration descriptio
      uncheck display interface information) to disable this feature.
 > 2. If your network supports IPv6, you can modify the configuration: `ipv6_support = True` (GUI: Check
      `Force assume the current network supports IPv6`) to skip the support check.
-> 3. Enabling keyword search (disabled by default) will significantly increase the update time, not recommended to
-     enable.
 
-#### Similarly, you can customize subscription sources, blacklists, and whitelists (it is recommended to copy files and rename them with the
-
-`user_` prefix).
+#### Similarly, you can customize subscription sources, blacklists, and whitelists
 
 - Subscription sources (`config/subscribe.txt`)
 
-  Supports txt and m3u addresses as subscriptions, the program will read the channel interface data in sequence.
+  Since no default subscription addresses are provided, you need to add them yourself; otherwise the update results may
+  be empty. Both `.txt` and `.m3u` URLs are supported as subscriptions, and the program will read channel interface
+  entries from them sequentially.
   ![Subscription sources](./images/subscribe.png 'Subscription sources')
 
 
@@ -310,8 +312,6 @@ pipenv run ui
 ```
 
 ![IPTV-API Update Software](./images/ui.png 'IPTV-API Update Software')
-
-If you do not understand the software configuration options, do not change anything, just click start.
 
 ## Docker
 

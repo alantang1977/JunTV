@@ -53,8 +53,9 @@ pipeline 🚀. Supports extensive customization; paste the resulting URL into yo
 > [!IMPORTANT]
 > 1. Visit the `Govin` WeChat official account and reply with `cdn` to get a proxy acceleration address to improve
      access speed for subscription sources and channel icons.
-> 2. This project does not guarantee or explain the stability of the interface results.
-> 3. To achieve optimal stability, it is recommended to maintain the data sources yourself.
+> 2. The default subscription sources are no longer provided; please add them yourself.
+> 3. This project does not guarantee or explain the stability of the interface results.
+> 4. To achieve optimal stability, it is recommended to maintain the data sources yourself.
 
 ## Core Features
 
