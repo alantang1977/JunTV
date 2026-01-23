@@ -1,5 +1,5 @@
 #EXTM3U x-tvg-url="https://raw.githubusercontent.com/alantang1977/JunTV/refs/heads/main/output/epg/epg.gz"
-#EXTINF:-1 tvg-name="广州综合" tvg-logo="广州综合.png" group-title="🕘️更新时间",2026-01-23 06:40:23
+#EXTINF:-1 tvg-name="广州综合" tvg-logo="广州综合.png" group-title="🕘️更新时间",2026-01-24 06:33:26
 http://php.jdshipin.com:8880/gztv.php?id=zhonghe
 #EXTINF:-1 tvg-name="广州综合" tvg-logo="广州综合.png" group-title="🍄┃广东频道",广州综合
 http://php.jdshipin.com:8880/gztv.php?id=zhonghe
@@ -2325,6 +2325,8 @@ https://hls-gateway.vpstv.net/streams/708903.m3u8
 https://4gtv.946985.filegear-sg.me/playlist?channel=Global%20Trekker
 #EXTINF:-1 tvg-name="Love Nature" tvg-logo="Love Nature.png" group-title="🚂┃湾区频道",Love Nature
 https://4gtv.946985.filegear-sg.me/playlist?channel=Love%20Nature
+#EXTINF:-1 tvg-name="Love Nature" tvg-logo="Love Nature.png" group-title="🚂┃湾区频道",Love Nature
+http://tl.061833.xyz/tl/lovenaturehd
 #EXTINF:-1 tvg-name="TVBS 欢乐台" tvg-logo="TVBS 欢乐台.png" group-title="🅱┃台湾频道",TVBS 欢乐台
 https://smart.dxjc.pp.ua/smart.php?id=tvbshuanle_twn&token=tmxk
 #EXTINF:-1 tvg-name="TVBS HD" tvg-logo="TVBS HD.png" group-title="🅱┃台湾频道",TVBS HD
