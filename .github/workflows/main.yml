@@ -10,8 +10,14 @@ name: 'Update schedule'
 # If scheduled execution is required, use other deployment methods.
 
 on:
+  schedule:
+    - cron: '0 22,10 * * *'
   workflow_dispatch:
-
+    branches:
+      - master
+      - main
+      - dev
+      - gd
 jobs:
   push:
     runs-on: ${{ matrix.operating-system }}
@@ -21,7 +27,7 @@ jobs:
     steps:
       - name: Set branch name
         id: vars
-        run: echo "BRANCH_NAME=${{ github.repository_owner == 'Guovin' && 'gd' || 'master' }}" >> $GITHUB_ENV
+        run: echo "BRANCH_NAME=${{ github.repository_owner == 'Guovin' && 'gd' || 'main' }}" >> $GITHUB_ENV
       - uses: actions/checkout@v3
         with:
           ref: ${{ env.BRANCH_NAME }}
