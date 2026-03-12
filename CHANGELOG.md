@@ -1,5 +1,198 @@
 # 更新日志（Changelog）
 
+## v2.0.1
+
+### 2026/3/11
+
+### 🚀 新增功能
+
+1. 推流模块：支持在推流时自动切换编码器进行转码，以提升兼容性与成功率。
+2. 订阅源/EPG 请求头：支持为订阅源或 EPG 请求设置 User-Agent（UA）或其他验证信息。
+3. 保留原始订阅数据：支持将订阅源的原始接口数据保留到 `output/log/subscribe` 目录，便于排查与二次处理。
+4. 源信息采集：支持获取并记录源的帧率、视频/音频编解码器等信息，并输出到日志以便诊断。
+5. 文档与示例：新增 Docker 下使用推流的详细教程。
+6. 默认 EPG：增加默认的 EPG 订阅以提升开箱体验。
+
+### 🐛 优化与修复
+
+1. 降低推流模块 CPU 占用，优化转码效率与兼容性。
+2. 修复本地源推流结果的输出路径错误。
+3. 修复无法处理属性为空的 M3U 订阅源时导致无结果的问题。
+4. 优化对 GitHub 订阅源的访问与自动内容转换逻辑，提升稳定性。
+5. 修复 GUI 中运行进度的国际化显示问题。
+
+<details>
+  <summary>English</summary>
+
+### 2026/3/11
+
+### 🚀 New Features
+
+1. Streaming: Support automatic encoder switching during push streaming for on-the-fly transcoding, improving
+   compatibility and success rates.
+2. Subscription/EPG request headers: Allow setting User-Agent (UA) and other verification headers for subscription or
+   EPG requests.
+3. Preserve raw subscription data: Optionally retain original subscription interface data under `output/log/subscribe`
+   for troubleshooting and secondary processing.
+4. Source metadata collection: Collect and log source properties such as frame rate, video codec and audio codec for
+   diagnostics.
+5. Docs & examples: Added a detailed Docker guide for using push streaming.
+6. Default EPG: Added a default EPG subscription to improve out-of-the-box experience.
+
+### 🐛 Optimizations & Fixes
+
+1. Reduced CPU usage in the streaming module; improved transcoding efficiency and compatibility.
+2. Fixed incorrect output path for local-source streaming results.
+3. Fixed issue where M3U subscription sources with empty attributes could not be processed.
+4. Improved access and automatic content normalization for GitHub-based subscription sources.
+5. Fixed localization/internationalization issue in GUI runtime progress display.
+
+</details>
+
+## v2.0.0
+
+<div align="center">
+  <img src="https://gh-proxy.com/https://raw.githubusercontent.com/Guovin/iptv-api/refs/heads/master/static/images/logo.svg" alt="logo" width="120" height="120"/>
+</div>
+
+### 2026/2/14
+
+> [!IMPORTANT]
+> 1. ⚠️ 由于项目 Fork 数量过多，Github 资源使用达到上限，工作流已调整为**手动触发**。请尽快更新
+     [main.yml](./.github/workflows/main.yml)，移除定时任务，否则可能被官方禁用工作流。
+> 2. ⚠️ 本项目**不提供数据源**，请自行添加后生成结果（[如何添加数据源？](./docs/tutorial.md#添加数据源与更多)）。
+
+### 🌟 重点更新（必须关注）
+
+- 支持测速**实时输出**结果（`open_realtime_write`），测速过程中即可访问并使用最新结果，下一次更新时进行原子替换，显著提升可用性与调试效率。
+- 新增达到指定有效结果数（`urls_limit`）即**自动跳过剩余测速**功能，避免等待所有接口测速完成，极大缩短单次更新时间。
+- 新增按**分辨率指定最低速率映射**（`resolution_speed_map`），可以为不同分辨率设置不同最低速率要求，测速筛选更合理。
+- 推流模块重构：支持设置**最大并发推流**（`rtmp_max_streams`）与**空闲超时自动停止推流**（`rtmp_idle_timeout`），
+  提升转码兼容性与浏览器直接播放体验。
+- 提供官方 [docker-compose.yml](./docker-compose.yml) 示例，一键部署；镜像与环境变量支持通过 `PUBLIC_DOMAIN` /
+  `PUBLIC_PORT` 覆盖公网访问与推流地址，默认 NGINX HTTP 端口已调整为 `8080`（注意容器端口映射）。
+
+### 🚀 新增功能
+
+- Docker: 支持通过环境变量覆盖 `config.ini` 中的所有配置项，方便容器化部署与反向代理配置。
+- 支持读取多个本地源文件目录 `config/local`（txt/m3u），并支持本地台标 `config/logo`。
+- 新增 HTTP 代理配置（`http_proxy`），增强在受限网络环境下的获取能力。
+- 支持识别并过滤过期/无效的 EPG 数据，提高 EPG 质量。
+- 支持语言切换（`language`），可选 `zh_CN` / `en`，界面与实时日志可切换语言输出。
+- 新增M3U`tvg-id`以适配更多播放器合并频道源。
+
+### 🐛 优化与修复
+
+- 优化降低程序运行时的内存占用。
+- 优化 CCTV 类频道别名匹配与 4K 频道识别（匹配规则改进）。
+- 优化推流首播体验、转码兼容性与 Docker 推流监控。
+- 优化接口冻结流程，智能管理与解冻判断。
+- 更新 IP 归属库与运营商数据，提高归属地过滤准确性。
+- 若干测速与过滤逻辑优化，减少误判与提升效率。
+- 调整Docker日志实时无缓冲输出。
+
+### ⚙️ 配置项说明（新增 / 重点变更）
+
+- `open_realtime_write`（bool）  
+  开启实时写入结果文件，测速过程中可直接访问最新结果；建议在需要监控或分阶段验证时开启。
+- `resolution_speed_map`（string, 示例: `1280x720:0.2,1920x1080:0.5,3840x2160:1.0`）  
+  按分辨率指定最低速率，当 `open_filter_resolution` 与 `open_filter_speed` 同时开启时生效，用于细粒度过滤。
+- `open_full_speed_test`（bool）  
+  开启全量测速，频道下所有接口（白名单除外）都进行测速；关闭则在收集到 `urls_limit` 个有效结果后停止。
+- `PUBLIC_DOMAIN` / `PUBLIC_PORT`（环境变量）  
+  用于容器或反向代理环境下生成公网访问与推流地址，优先于 `public_domain` / `app_port` 配置。
+- `NGINX_HTTP_PORT`（int）  
+  内部默认已调整为 `8080`，Docker 部署请确保端口映射正确。
+- `speed_test_limit`（int） 与 `speed_test_timeout`（s）  
+  控制测速并发量与单接口超时，调整能在速度与准确性之间取舍。
+
+### 🆙 升级建议
+
+- 更新后请同步 `config/config.ini`（或将变更合并到 `user_config.ini`），并校验 Docker 映射与 `PUBLIC_DOMAIN` /
+  `PUBLIC_PORT` 配置以保证推流与外网访问正常。
+- GUI可能有部分新增功能没有提供界面设置，建议通过修改配置文件进行调整，
+  后续将逐步被新项目[IPTV-Admin](https://github.com/Guovin/iptv-admin)替代，GUI功能可能将不再更新。
+- 为了避免版权问题，新版本移除了部分不稳定或不常用的功能（如组播、酒店、关键字搜索、浏览器模式等），
+  同时相关条例也进行了更新，请认真仔细阅读[免责声明](./README.md#免责声明)
+
+<details>
+  <summary>English</summary>
+
+> [!IMPORTANT]
+> 1. ⚠️ Due to an excessive number of forks, GitHub resources have reached their limit and workflows have been changed
+     to manual triggers. Please update [main.yml](./.github/workflows/main.yml) as soon as possible to remove scheduled
+     tasks, otherwise workflows may be disabled by GitHub.
+> 2. ⚠️ This project **does not provide data sources**. Please add your own data sources before generating
+     results ([How to add data sources?](./docs/tutorial_en.md#Add-data-sources-and-more)).
+
+### 🌟 Key updates (must note)
+
+- Support for real-time speed test result output (`open_realtime_write`), allowing access to and use of the latest
+  results during testing; the file will be atomically replaced on the next update, significantly improving availability
+  and debugging efficiency.
+- Added automatic skipping of remaining speed tests once a specified number of valid results (`urls_limit`) is reached,
+  avoiding waiting for all interfaces and greatly reducing single-update time.
+- Added resolution-to-minimum-speed mapping (`resolution_speed_map`) to set different minimum speed requirements for
+  different resolutions, making speed-based filtering more reasonable.
+- Refactored streaming module: support for setting maximum concurrent streams (`rtmp_max_streams`) and automatic stream
+  stop on idle (`rtmp_idle_timeout`), improving transcoding compatibility and direct browser playback experience.
+- Provided an official [docker-compose.yml](./docker-compose.yml) example for one-click deployment; image and
+  environment variables can override public access and streaming addresses via `PUBLIC_DOMAIN` / `PUBLIC_PORT`. The
+  default internal NGINX HTTP port has been adjusted to `8080` (pay attention to container port mapping).
+
+### 🚀 New features
+
+- Docker: support overriding all `config.ini` items via environment variables for easier container deployment and
+  reverse proxy configuration.
+- Support reading multiple local source file directories `config/local` (txt/m3u), and support local logos in
+  `config/logo`.
+- Added HTTP proxy configuration (`http_proxy`) to improve fetching in restricted network environments.
+- Support identification and filtering of expired/invalid EPG data to improve EPG quality.
+- Support language switching (`language`), optional `zh_CN` / `en`, enabling UI and real-time log language switching.
+- Added M3U `tvg-id` to support merging channel sources in more players.
+
+### 🐛 Optimizations & fixes
+
+- Optimized to reduce the memory usage during program runtime.
+- Improved alias matching for CCTV-type channels and 4K channel recognition (matching rules refined).
+- Improved first-play streaming experience, transcoding compatibility, and Docker streaming monitoring.
+- Optimized interface freezing process with smarter management and unfreeze judgment.
+- Updated IP attribution and carrier data to improve accuracy of location-based filtering.
+- Several speed test and filtering logic optimizations to reduce false positives and improve efficiency.
+- Adjust Docker logs to output in real-time without buffering.
+
+### ⚙️ Configuration items (new / important changes)
+
+- `open_realtime_write` (bool)  
+  Enable real-time writing of result files so the latest results can be accessed during speed tests; recommended when
+  monitoring or validating in stages.
+- `resolution_speed_map` (string, example: `1280x720:0.2,1920x1080:0.5,3840x2160:1.0`)  
+  Specify minimum speeds per resolution. Effective when both `open_filter_resolution` and `open_filter_speed` are
+  enabled, for fine-grained filtering.
+- `open_full_speed_test` (bool)  
+  Enable full speed tests; all interfaces under a channel (except whitelisted ones) will be tested. When disabled,
+  testing stops once `urls_limit` valid results are collected.
+- `PUBLIC_DOMAIN` / `PUBLIC_PORT` (environment variables)  
+  Used to generate public access and streaming addresses in container or reverse proxy environments; take precedence
+  over `public_domain` / `app_port`.
+- `NGINX_HTTP_PORT` (int)  
+  Internal default adjusted to `8080`. Ensure port mapping is correct for Docker deployments.
+- `speed_test_limit` (int) and `speed_test_timeout` (s)  
+  Control speed test concurrency and per-interface timeout; adjust to balance speed and accuracy.
+
+### 🆙 Upgrade recommendations
+
+- After updating, synchronize `config/config.ini` (or merge changes into `user_config.ini`) and verify Docker mappings
+  and `PUBLIC_DOMAIN` / `PUBLIC_PORT` settings to ensure streaming and public access work correctly.
+- The GUI may not expose some new features; it is recommended to adjust settings via configuration files. This project
+  will gradually be replaced by the new project `IPTV-Admin` (`https://github.com/Guovin/iptv-admin`), and GUI features
+  may no longer be updated.
+- To avoid copyright issues, this release removed some unstable or rarely used features (such as multicast, hotel
+  sources, keyword search, browser mode, etc.), and related policies have been updated. Please read
+  the [disclaimer](./README_en.md#Disclaimer) carefully.
+
+</details>
+
 ## v1.7.3
 
 ### 2025/10/15

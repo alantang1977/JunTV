@@ -39,7 +39,16 @@ def show_logo(filename):
     if not filename:
         return jsonify({"error": "filename required"}), 400
 
-    safe_name = secure_filename(filename)
+    try:
+        safe_name = secure_filename(filename, allow_unicode=True)
+    except TypeError:
+        safe_name = os.path.basename(filename)
+        safe_name = safe_name.replace('/', '').replace('\\', '')
+        safe_name = safe_name.lstrip('.')
+
+    if not safe_name:
+        return jsonify({"error": "filename required"}), 400
+
     logo_dir = resource_path(constants.channel_logo_path)
     file_path = os.path.join(logo_dir, safe_name)
 
@@ -233,7 +242,9 @@ def hls_proxy(channel_id):
 
     if need_start:
         host = f"{app_rtmp_url}/hls"
-        start_hls_to_rtmp(host, channel_id)
+        client_ua = request.headers.get('User-Agent') if request and hasattr(request, 'headers') else None
+        print(f"▶️ {client_ua}")
+        start_hls_to_rtmp(host, channel_id, client_user_agent=client_ua)
 
     hls_min_segments = 3
     waited = 0.0

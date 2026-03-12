@@ -1,17 +1,15 @@
 import asyncio
 import http.cookies
-import json
 import re
-import subprocess
 from time import time
 from urllib.parse import quote, urljoin
 
 import m3u8
 from aiohttp import ClientSession, TCPConnector
-from multidict import CIMultiDictProxy
 
 import utils.constants as constants
 from utils.config import config
+from utils.ffmpeg import probe_url, ffmpeg_url, get_resolution_ffprobe
 from utils.i18n import t
 from utils.requests.tools import headers as request_headers
 from utils.tools import get_resolution_value
@@ -27,6 +25,7 @@ max_resolution_value = config.max_resolution_value
 open_supply = config.open_supply
 open_filter_speed = config.open_filter_speed
 min_speed_value = config.min_speed
+resolution_speed_map = config.resolution_speed_map
 m3u8_headers = ['application/x-mpegurl', 'application/vnd.apple.mpegurl', 'audio/mpegurl', 'audio/x-mpegurl']
 default_ipv6_delay = 0.1
 default_ipv6_resolution = "1920x1080"
@@ -104,9 +103,7 @@ async def get_speed_with_download(url: str, headers: dict = None, session: Clien
         }
 
 
-async def get_headers(url: str, headers: dict = None, session: ClientSession = None, timeout: int = 5) -> \
-        CIMultiDictProxy[str] | dict[
-            any, any]:
+async def get_headers(url: str, headers: dict = None, session: ClientSession = None, timeout: int = 5) -> dict:
     """
     Get the headers of the url
     """
@@ -152,7 +149,7 @@ async def get_url_content(url: str, headers: dict = None, session: ClientSession
         return content
 
 
-def check_m3u8_valid(headers: CIMultiDictProxy[str] | dict[any, any]) -> bool:
+def check_m3u8_valid(headers: dict) -> bool:
     """
     Check if the m3u8 url is valid
     """
@@ -212,7 +209,7 @@ def _try_extract_speed_from_ffmpeg_output(output: str) -> float | None:
         if m_audio:
             total_bytes += parse_size_value(m_audio.group(1), m_audio.group(2))
 
-        m_time = re.search(r"time=\s*([0-9:\.]+)", output)
+        m_time = re.search(r"time=\s*([0-9:.]+)", output)
         if total_bytes > 0 and m_time:
             secs = _parse_time_to_seconds(m_time.group(1))
             if secs > 0:
@@ -223,7 +220,7 @@ def _try_extract_speed_from_ffmpeg_output(output: str) -> float | None:
     try:
         m_lsize = re.search(r"Lsize=\s*([0-9]+(?:\.[0-9]+)?)\s*(KiB|kB|MiB|B|kb|KB)?", output, re.IGNORECASE)
         m_size = re.search(r"size=\s*([0-9]+(?:\.[0-9]+)?)\s*(KiB|kB|MiB|B|kb|KB)?", output, re.IGNORECASE)
-        m_time = re.search(r"time=\s*([0-9:\.]+)", output)
+        m_time = re.search(r"time=\s*([0-9:.]+)", output)
         size_bytes = 0.0
         if m_lsize and m_lsize.group(1).upper() != "N/A":
             size_bytes = parse_size_value(m_lsize.group(1), m_lsize.group(2))
@@ -237,7 +234,7 @@ def _try_extract_speed_from_ffmpeg_output(output: str) -> float | None:
         pass
 
     try:
-        m_bitrate = re.search(r"bitrate=\s*([0-9\.]+)\s*k?bits/s", output)
+        m_bitrate = re.search(r"bitrate=\s*([0-9.]+)\s*k?bits/s", output)
         if m_bitrate:
             kbps = float(m_bitrate.group(1))
             return kbps / 8.0 / 1024.0
@@ -253,7 +250,7 @@ async def get_result(url: str, headers: dict = None, resolution: str = None,
     """
     Get the test result of the url
     """
-    info = {'speed': 0, 'delay': -1, 'resolution': resolution}
+    info = {'speed': 0.0, 'delay': -1, 'resolution': resolution}
     location = None
     try:
         url = quote(url, safe=':/?$&=@[]%').partition('$')[0]
@@ -295,7 +292,7 @@ async def get_result(url: str, headers: dict = None, resolution: str = None,
                         if ff_out:
                             parsed_speed = _try_extract_speed_from_ffmpeg_output(ff_out)
                             if parsed_speed is not None and parsed_speed > 0:
-                                info['speed'] = parsed_speed
+                                info['speed'] = float(parsed_speed)
                             try:
                                 _, parsed_resolution = get_video_info(ff_out)
                                 if parsed_resolution:
@@ -307,8 +304,18 @@ async def get_result(url: str, headers: dict = None, resolution: str = None,
     except:
         pass
     finally:
-        if not info['resolution'] and filter_resolution and not location and info['delay'] != -1:
-            info['resolution'] = await get_resolution_ffprobe(url, headers, timeout)
+        if not info.get('resolution') and filter_resolution and not location and info.get('delay') != -1:
+            try:
+                probed = await probe_url(url, headers, timeout=timeout)
+                if probed:
+                    res = probed.get('resolution')
+                    if res:
+                        info['resolution'] = res
+                    info['fps'] = probed.get('fps')
+                    info['video_codec'] = probed.get('video_codec')
+                    info['audio_codec'] = probed.get('audio_codec')
+            except Exception:
+                pass
         return info
 
 
@@ -333,162 +340,6 @@ async def get_delay_requests(url, timeout=speed_test_timeout, proxy=None):
         except Exception as e:
             return -1
         return int(round((end - start) * 1000)) if end else -1
-
-
-def check_ffmpeg_installed_status():
-    """
-    Check ffmpeg is installed
-    """
-    status = False
-    try:
-        result = subprocess.run(
-            ["ffmpeg", "-version"], stdout=subprocess.PIPE, stderr=subprocess.PIPE
-        )
-        status = result.returncode == 0
-    except FileNotFoundError:
-        status = False
-    except Exception as e:
-        print(e)
-    finally:
-        if status:
-            print(t("msg.ffmpeg_installed"))
-        else:
-            print(t("msg.ffmpeg_not_installed"))
-        return status
-
-
-async def ffmpeg_url(url, headers=None, timeout=speed_test_timeout):
-    """
-    Get the ffmpeg output of the url
-    """
-    headers_str = "".join(f"{k}: {v}\r\n" for k, v in headers.items())
-
-    args = ["ffmpeg", "-t", str(timeout)]
-    if headers_str:
-        args += ["-headers", headers_str]
-    args += ["-http_persistent", "0", "-stats", "-i", url, "-f", "null", "-"]
-
-    proc = None
-    stderr_parts: list[bytes] = []
-    speed_samples: list[float] = []
-    bitrate_re = re.compile(r"bitrate=\s*([0-9\.]+)\s*k?bits/s", re.IGNORECASE)
-    start = time()
-
-    try:
-        proc = await asyncio.create_subprocess_exec(
-            *args, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE
-        )
-
-        while True:
-            try:
-                line = await asyncio.wait_for(proc.stderr.readline(), timeout=0.5)
-            except asyncio.TimeoutError:
-                line = b''
-            now = time()
-            elapsed = now - start
-
-            if line == b'':
-                if proc.returncode is None:
-                    if elapsed >= timeout:
-                        proc.kill()
-                        await proc.wait()
-                        break
-                    await asyncio.sleep(0)
-                    if proc.returncode is not None:
-                        break
-                    continue
-                else:
-                    break
-
-            stderr_parts.append(line)
-
-            try:
-                text = line.decode(errors="ignore")
-            except Exception:
-                text = ""
-
-            m = bitrate_re.search(text)
-            if m:
-                try:
-                    kbps = float(m.group(1))
-                    mbps = kbps / 8.0 / 1024.0
-                    speed_samples.append(mbps)
-                except Exception:
-                    pass
-
-            if elapsed >= min_measure_time and len(speed_samples) >= stability_window:
-                window = speed_samples[-stability_window:]
-                mean = sum(window) / len(window)
-                if mean > 0 and (max(window) - min(window)) / mean < stability_threshold:
-                    try:
-                        proc.kill()
-                    except Exception:
-                        pass
-                    await proc.wait()
-                    break
-
-        try:
-            out, err = await asyncio.wait_for(proc.communicate(), timeout=1)
-            if err:
-                stderr_parts.append(err)
-            if out:
-                stderr_parts.append(out)
-        except Exception:
-            try:
-                proc.kill()
-            except Exception:
-                pass
-            await proc.wait()
-    except asyncio.TimeoutError:
-        if proc:
-            try:
-                proc.kill()
-            except Exception:
-                pass
-            await proc.wait()
-    except Exception:
-        if proc:
-            try:
-                proc.kill()
-            except Exception:
-                pass
-            await proc.wait()
-    finally:
-        stderr_bytes = b"".join(stderr_parts)
-        try:
-            return stderr_bytes.decode(errors="ignore")
-        except Exception:
-            return None
-
-
-async def get_resolution_ffprobe(url: str, headers: dict = None, timeout: int = speed_test_timeout) -> str | None:
-    """
-    Get the resolution of the url by ffprobe
-    """
-    resolution = None
-    proc = None
-    try:
-        probe_args = [
-            'ffprobe',
-            '-v', 'error',
-            '-headers', ''.join(f'{k}: {v}\r\n' for k, v in headers.items()) if headers else '',
-            '-select_streams', 'v:0',
-            '-show_entries', 'stream=width,height',
-            "-of", 'json',
-            url
-        ]
-        proc = await asyncio.create_subprocess_exec(*probe_args, stdout=asyncio.subprocess.PIPE,
-                                                    stderr=asyncio.subprocess.PIPE)
-        out, _ = await asyncio.wait_for(proc.communicate(), timeout)
-        video_stream = json.loads(out.decode('utf-8'))["streams"][0]
-        resolution = f"{video_stream['width']}x{video_stream['height']}"
-    except:
-        if proc:
-            proc.kill()
-    finally:
-        if proc:
-            await proc.wait()
-        return resolution
 
 
 def get_video_info(video_info):
@@ -577,8 +428,10 @@ async def get_speed(data, headers=None, ipv6_proxy=None, filter_resolution=open_
         if callback:
             callback()
         if logger:
+            origin = data.get('origin')
+            origin_name = t(f"name.{origin}") if origin else origin
             logger.info(
-                f"Name: {data.get('name')}, URL: {data.get('url')}, From: {data.get('origin')}, IPv_Type: {data.get("ipv_type")}, Location: {data.get('location')}, ISP: {data.get('isp')}, Date: {data["date"]}, Delay: {result.get('delay') or -1} ms, Speed: {result.get('speed') or 0:.2f} M/s, Resolution: {result.get('resolution')}"
+                f"ID: {data.get('id')}, {t('name.name')}: {data.get('name')}, {t('pbar.url')}: {data.get('url')}, {t('name.from')}: {origin_name}, {t('name.ipv_type')}: {data.get('ipv_type')}, {t('name.location')}: {data.get('location')}, {t('name.isp')}: {data.get('isp')}, {t('name.delay')}: {result.get('delay') or -1} ms, {t('name.speed')}: {result.get('speed') or 0:.2f} M/s, {t('name.resolution')}: {result.get('resolution')}, {t('name.fps')}: {result.get('fps') or t('name.unknown')}, {t('name.video_codec')}: {result.get('video_codec') or t('name.unknown')}, {t('name.audio_codec')}: {result.get('audio_codec') or t('name.unknown')}"
             )
         return result
 
@@ -608,7 +461,7 @@ def get_sort_result(
         if result_delay == -1:
             continue
         if not supply:
-            if filter_speed and result_speed < min_speed:
+            if filter_speed and result_speed < resolution_speed_map.get(resolution, min_speed):
                 continue
             if filter_resolution and resolution:
                 resolution_value = get_resolution_value(resolution)

@@ -1,0 +1,172 @@
+name: Build and upload to latest release
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-upload:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.13'
+          update-environment: true
+          cache: 'pipenv'
+
+      - name: Install pipenv
+        run: python -m pip install --upgrade pip; pip3 install --user pipenv
+        shell: pwsh
+
+      - name: Install dependencies with pipenv
+        run: pipenv --python 3.13 && pipenv install --dev
+        shell: pwsh
+
+      - name: Build the application
+        run: pipenv run pyinstaller --clean --noconfirm --distpath dist tkinter_ui/tkinter_ui.spec
+        shell: pwsh
+
+      - name: Check dist exists
+        run: |
+          if (-not (Test-Path -Path dist)) {
+            Write-Error 'dist directory not found. Build failed.'
+            exit 1
+          }
+          Write-Host 'Dist contents:'
+          Get-ChildItem -Path dist -Recurse | Select-Object FullName,Length
+        shell: pwsh
+
+      - name: Package dist into timestamped zip
+        id: package
+        run: |
+          if (-not (Test-Path -Path version.json)) {
+            Write-Error 'version.json not found.'
+            exit 1
+          }
+          $json = Get-Content version.json | ConvertFrom-Json
+          $name = $json.name
+          $ver = $json.version
+          if (-not $ver) { $ver = 'unknown' }
+          $ts = (Get-Date).ToUniversalTime().AddHours(8).ToString('yyyyMMdd-HHmmss')
+          $zipName = "${name}-v${ver}-${ts}.zip"
+          $zipPath = Join-Path -Path $PWD -ChildPath $zipName
+          if (Test-Path $zipPath) { Remove-Item $zipPath -Force }
+          Compress-Archive -Path dist\* -DestinationPath $zipPath
+          if (-not (Test-Path $zipPath)) {
+            Write-Error 'Zip creation failed'
+            exit 1
+          }
+          $size = (Get-Item $zipPath).Length
+          if ($size -gt 2147483648) {
+            Write-Error "Zip size ($size bytes) exceeds GitHub's 2GB limit. Aborting upload."
+            exit 1
+          }
+          Write-Host "Zip created: $zipPath (size: $size bytes)"
+          Add-Content -Path $env:GITHUB_OUTPUT -Value "zip_path=$zipPath"
+          Add-Content -Path $env:GITHUB_OUTPUT -Value "zip_name=$zipName"
+        shell: pwsh
+
+      - name: Get latest release upload_url
+        id: get_latest_release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          if (-not $env:GITHUB_TOKEN) {
+            Write-Error 'GITHUB_TOKEN not available. Set a token with repo access in secrets.RELEASE_PAT or enable permissions.'
+            exit 1
+          }
+          $headers = @{ Authorization = "Bearer $env:GITHUB_TOKEN"; Accept = 'application/vnd.github+json' }
+          $apiUrl = "https://api.github.com/repos/$env:GITHUB_REPOSITORY/releases/latest"
+          try {
+            $release = Invoke-RestMethod -Uri $apiUrl -Headers $headers -UseBasicParsing -ErrorAction Stop
+          } catch {
+            Write-Error "Failed to get latest release: $($_.Exception.Message)"
+            exit 1
+          }
+          # Keep the original templated upload_url (e.g. ends with '{?name,label}') and also a cleaned version without template
+          $upload_url_template = $release.upload_url.Trim()
+          $upload_url = ($upload_url_template -replace '\{.*\}$','').Trim()
+          if (-not $upload_url_template) {
+            Write-Error "Parsed upload_url_template is empty. Full release object: $($release | ConvertTo-Json -Depth 4)"
+            exit 1
+          }
+          Write-Host "Latest release id: $($release.id)"
+          Write-Host "Upload URL (template): $upload_url_template"
+          Write-Host "Upload URL (clean): $upload_url"
+          # Export both values
+          Add-Content -Path $env:GITHUB_OUTPUT -Value "upload_url=$upload_url"
+          Add-Content -Path $env:GITHUB_OUTPUT -Value "upload_url_template=$upload_url_template"
+        shell: pwsh
+
+      - name: Debug upload args
+        run: |
+          Write-Host "--- DEBUG: upload args (delimited) ---"
+          Write-Host "UPLOAD_URL_TEMPLATE=|||${{ steps.get_latest_release.outputs.upload_url_template }}|||"
+          Write-Host "UPLOAD_URL=|||${{ steps.get_latest_release.outputs.upload_url }}|||"
+          Write-Host "ZIP_PATH=|||${{ steps.package.outputs.zip_path }}|||"
+          Write-Host "ZIP_NAME=|||${{ steps.package.outputs.zip_name }}|||"
+          if (-not (Test-Path "${{ steps.package.outputs.zip_path }}")) {
+            Write-Error "Zip not found at path: $(${{ steps.package.outputs.zip_path }})"
+            exit 1
+          }
+        shell: pwsh
+
+      - name: Delete existing asset with same name (if any)
+        if: always()
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          $zipName = "${{ steps.package.outputs.zip_name }}"
+          if (-not $env:GITHUB_TOKEN) {
+            Write-Error 'GITHUB_TOKEN not available; cannot manage existing assets.'
+            exit 1
+          }
+          $headers = @{ Authorization = "Bearer $env:GITHUB_TOKEN"; Accept = 'application/vnd.github+json' }
+          $apiUrl = "https://api.github.com/repos/$env:GITHUB_REPOSITORY/releases/latest"
+          try {
+            $release = Invoke-RestMethod -Uri $apiUrl -Headers $headers -UseBasicParsing -ErrorAction Stop
+          } catch {
+            Write-Warning "Failed to fetch latest release to check assets: $($_.Exception.Message)"
+            exit 0
+          }
+          if (-not $release.assets) { Write-Host "No assets on latest release."; exit 0 }
+          $found = $false
+          foreach ($a in $release.assets) {
+            if ($a.name -eq $zipName) {
+              Write-Host "Found existing asset with same name: $($a.name) (id: $($a.id)). Deleting..."
+              $delUrl = "https://api.github.com/repos/$env:GITHUB_REPOSITORY/releases/assets/$($a.id)"
+              try {
+                Invoke-RestMethod -Uri $delUrl -Method Delete -Headers $headers -UseBasicParsing -ErrorAction Stop
+                Write-Host "Deleted asset id $($a.id)"
+                $found = $true
+              } catch {
+                Write-Warning "Failed to delete existing asset id $($a.id): $($_.Exception.Message)"
+              }
+            }
+          }
+          if (-not $found) { Write-Host "No existing asset with name $zipName found." }
+        shell: pwsh
+
+      - name: Upload zip to latest release
+        id: upload_asset
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.get_latest_release.outputs.upload_url_template }}
+          asset_path: ${{ steps.package.outputs.zip_path }}
+          asset_name: ${{ steps.package.outputs.zip_name }}
+          asset_content_type: application/zip
+
+      - name: Confirm upload
+        if: ${{ success() }}
+        run: |
+          Write-Host "Uploaded ${{ steps.package.outputs.zip_name }} to the latest release."
+        shell: pwsh
+
