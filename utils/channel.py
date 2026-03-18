@@ -41,7 +41,7 @@ from utils.tools import (
     custom_print,
     get_name_uri_from_dir,
     get_resolution_value,
-    get_public_url, build_path_list, get_real_path, count_files_by_ext
+    get_public_url, build_path_list, get_real_path, count_files_by_ext, close_logger_handlers
 )
 from utils.types import ChannelData, OriginType, CategoryChannelData, WhitelistMaps
 from utils.whitelist import is_url_whitelisted, get_whitelist_url, get_whitelist_total_count
@@ -670,8 +670,8 @@ async def test_speed(data, ipv6=False, callback=None, on_task_complete=None):
     if tasks:
         await asyncio.gather(*tasks, return_exceptions=True)
 
-    logger.handlers.clear()
-    result_logger.handlers.clear()
+    close_logger_handlers(logger)
+    close_logger_handlers(result_logger)
     return grouped_results
 
 

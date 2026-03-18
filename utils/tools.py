@@ -1137,3 +1137,13 @@ def get_subscribe_entries(path: str = "config/subscribe.txt") -> tuple[list, lis
             target.append(entry)
 
     return inside, outside
+
+
+def close_logger_handlers(logger) -> None:
+    for h in logger.handlers[:]:
+        try:
+            h.flush()
+            h.close()
+        except Exception:
+            pass
+        logger.removeHandler(h)

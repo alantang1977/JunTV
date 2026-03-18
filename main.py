@@ -423,7 +423,7 @@ class UpdateSource:
 
 if __name__ == "__main__":
     info = get_version_info()
-    print(t("msg.version_info").format(name=info["name"], version=info["version"]))
+    print(t("msg.version_info").format(name=info["name"], version=info["version"], build_time=info["build_time"]))
     if not config.open_update:
         print(t("msg.update_disabled"))
     else:

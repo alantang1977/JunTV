@@ -2,8 +2,6 @@ import datetime
 import os
 import sys
 
-from utils.ffmpeg import check_ffmpeg_installed_status
-
 sys.path.append(os.path.dirname(sys.path[0]))
 import tkinter as tk
 from tkinter import messagebox
@@ -21,8 +19,11 @@ from prefer import PreferUI
 from local import LocalUI
 from subscribe import SubscribeUI
 from epg import EpgUI
+from utils.ffmpeg import check_ffmpeg_installed_status
 import pystray
 from service.app import run_service
+import atexit
+from service.rtmp import stop_rtmp_service
 
 
 class TkinterUI:
@@ -283,4 +284,6 @@ if __name__ == "__main__":
     root.after(0, config.copy("output"))
     if config.open_service:
         root.after(0, threading.Thread(target=run_service, daemon=True).start())
+        if config.open_rtmp and sys.platform == "win32":
+            atexit.register(stop_rtmp_service)
     root.mainloop()

@@ -312,6 +312,10 @@ class ConfigManager:
         return self.config.getint("Settings", "rtmp_max_streams", fallback=10)
 
     @property
+    def rtmp_transcode_mode(self):
+        return (self.config.get("Settings", "rtmp_transcode_mode", fallback="copy") or "copy").lower()
+
+    @property
     def public_scheme(self):
         return self.config.get("Settings", "public_scheme", fallback="http") or "http"
 

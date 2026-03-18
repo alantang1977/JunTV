@@ -7,7 +7,7 @@ from typing import Any, Dict, Optional, Set, Tuple, Callable, cast
 import utils.constants as constants
 from utils.channel import sort_channel_result, generate_channel_statistic, write_channel_to_file, retain_origin
 from utils.config import config
-from utils.tools import get_logger
+from utils.tools import get_logger, close_logger_handlers
 
 
 class ResultAggregator:
@@ -296,4 +296,4 @@ class ResultAggregator:
                 pass
             self._debounce_task = None
         if self.stat_logger:
-            self.stat_logger.handlers.clear()
+            close_logger_handlers(self.stat_logger)

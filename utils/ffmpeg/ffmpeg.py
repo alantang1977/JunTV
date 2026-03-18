@@ -107,12 +107,24 @@ async def ffmpeg_url(url, headers=None, timeout=10):
                 stderr_parts.append(err)
             if out:
                 stderr_parts.append(out)
+        except asyncio.TimeoutError:
+            try:
+                proc.kill()
+            except Exception:
+                pass
+            try:
+                await proc.wait()
+            except Exception:
+                pass
         except Exception:
             try:
                 proc.kill()
             except Exception:
                 pass
-            await proc.wait()
+            try:
+                await proc.wait()
+            except Exception:
+                pass
     except asyncio.TimeoutError:
         if proc:
             try:
@@ -128,6 +140,15 @@ async def ffmpeg_url(url, headers=None, timeout=10):
                 pass
             await proc.wait()
     finally:
+        if proc:
+            try:
+                proc.kill()
+            except Exception:
+                pass
+            try:
+                await proc.wait()
+            except Exception:
+                pass
         stderr_bytes = b"".join(stderr_parts)
         try:
             return stderr_bytes.decode(errors="ignore")

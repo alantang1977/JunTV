@@ -1,4 +1,3 @@
-import asyncio
 import json
 import os
 import subprocess
@@ -12,7 +11,7 @@ import utils.constants as constants
 from utils.config import config
 from utils.db import ensure_result_data_schema
 from utils.db import get_db_connection, return_db_connection
-from utils.ffmpeg import probe_url
+from utils.ffmpeg import probe_url_sync
 from utils.i18n import t
 from utils.tools import join_url, resource_path, render_nginx_conf
 
@@ -81,8 +80,6 @@ def ensure_hls_idle_monitor_started():
         if _hls_monitor_started_evt.is_set():
             return
         try:
-            if not config.open_rtmp:
-                return
             thread = threading.Thread(target=hls_idle_monitor, daemon=True, name="hls-idle-monitor")
             thread.start()
             _hls_monitor_started_evt.set()
@@ -186,20 +183,10 @@ def start_hls_to_rtmp(host, channel_id, client_user_agent: str | None = None):
         'fps': data.get('fps'),
     }
 
-    if config.open_rtmp and (not meta.get('video_codec') or not meta.get('audio_codec')):
+    if config.rtmp_transcode_mode != 'copy' and (
+            not meta.get('video_codec') or not meta.get('audio_codec')):
         try:
-            probed = None
-            try:
-                probed = asyncio.run(probe_url(url, headers, timeout=10))
-            except RuntimeError:
-                loop = asyncio.new_event_loop()
-                try:
-                    probed = loop.run_until_complete(probe_url(url, headers, timeout=10))
-                finally:
-                    try:
-                        loop.close()
-                    except Exception:
-                        pass
+            probed = probe_url_sync(url, headers, timeout=10)
             if probed:
                 meta.update(probed)
                 _save_probe_metadata_to_db(channel_id, url, headers, probed)
@@ -218,8 +205,11 @@ def start_hls_to_rtmp(host, channel_id, client_user_agent: str | None = None):
                 return True
         return False
 
-    client_forces_transcode = bool(
-        client_user_agent and _client_needs_transcode_for_codec(client_user_agent, meta.get('video_codec')))
+    if config.rtmp_transcode_mode == 'copy':
+        client_forces_transcode = False
+    else:
+        client_forces_transcode = bool(
+            client_user_agent and _client_needs_transcode_for_codec(client_user_agent, meta.get('video_codec')))
 
     devnull = subprocess.DEVNULL
     base_cmd = ['ffmpeg', '-loglevel', 'error', '-re']
@@ -311,6 +301,16 @@ def start_hls_to_rtmp(host, channel_id, client_user_agent: str | None = None):
         mode_name = 'copy' if copy_audio else 'copy(video)+transcode(audio)'
         _register_process(copy_p, mode_name, _vid_codec, _aud_codec)
         return copy_p, True
+
+    if config.rtmp_transcode_mode == 'copy':
+        p, ok = _start_copy_trial(copy_audio=True)
+        if ok:
+            return p
+        p, ok = _start_copy_trial(copy_audio=False)
+        if ok:
+            return p
+        print(t("msg.rtmp_all_encoders_failed"))
+        return None
 
     if not client_forces_transcode:
         _v = (meta.get('video_codec') or '').lower()

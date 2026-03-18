@@ -42,6 +42,31 @@ jobs:
           Get-ChildItem -Path dist -Recurse | Select-Object FullName,Length
         shell: pwsh
 
+      - name: Get version and build time
+        id: inject
+        run: |
+          if (-not (Test-Path -Path version.json)) {
+            Write-Error 'version.json not found.'
+            exit 1
+          }
+          $json = Get-Content version.json | ConvertFrom-Json
+          $name = $json.name
+          $ver = $json.version
+          if (-not $ver) { $ver = 'unknown' }
+          try {
+            $tz = [System.TimeZoneInfo]::FindSystemTimeZoneById('Asia/Shanghai')
+            $build_time = [System.TimeZoneInfo]::ConvertTimeFromUtc((Get-Date).ToUniversalTime(), $tz).ToString('yyyy-MM-dd HH:mm:ss')
+          } catch {
+            $build_time = (Get-Date).ToUniversalTime().AddHours(8).ToString('yyyy-MM-dd HH:mm:ss')
+          }
+          $json.build_time = $build_time
+          $json | ConvertTo-Json -Depth 10 | Set-Content version.json
+          Add-Content -Path $env:GITHUB_ENV -Value "version=$ver"
+          Add-Content -Path $env:GITHUB_ENV -Value "build_time=$build_time"
+          $zip_ts = (Get-Date).ToUniversalTime().AddHours(8).ToString('yyyyMMdd-HHmmss')
+          Add-Content -Path $env:GITHUB_ENV -Value "zip_ts=$zip_ts"
+        shell: pwsh
+
       - name: Package dist into timestamped zip
         id: package
         run: |
@@ -53,7 +78,7 @@ jobs:
           $name = $json.name
           $ver = $json.version
           if (-not $ver) { $ver = 'unknown' }
-          $ts = (Get-Date).ToUniversalTime().AddHours(8).ToString('yyyyMMdd-HHmmss')
+          if ($env:zip_ts) { $ts = $env:zip_ts } else { $ts = (Get-Date).ToUniversalTime().AddHours(8).ToString('yyyyMMdd-HHmmss') }
           $zipName = "${name}-v${ver}-${ts}.zip"
           $zipPath = Join-Path -Path $PWD -ChildPath $zipName
           if (Test-Path $zipPath) { Remove-Item $zipPath -Force }

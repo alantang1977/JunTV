@@ -25,10 +25,26 @@ jobs:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
 
-      - name: Get version from version.json
+      - name: Get version and build time
         run: |
-          $version = (Get-Content version.json | ConvertFrom-Json).version
+          $path = 'version.json'
+          if (-not (Test-Path -Path $path)) {
+            Write-Error 'version.json not found.'
+            exit 1
+          }
+          $data = Get-Content $path | ConvertFrom-Json
+          $version = $data.version
+          if (-not $version) { $version = 'unknown' }
+          try {
+            $tz = [System.TimeZoneInfo]::FindSystemTimeZoneById('Asia/Shanghai')
+            $build_time = [System.TimeZoneInfo]::ConvertTimeFromUtc((Get-Date).ToUniversalTime(), $tz).ToString('yyyy-MM-dd HH:mm:ss')
+          } catch {
+            $build_time = (Get-Date).ToUniversalTime().AddHours(8).ToString('yyyy-MM-dd HH:mm:ss')
+          }
+          $data.build_time = $build_time
+          $data | ConvertTo-Json -Depth 10 | Set-Content $path
           echo "version=$version" >> $env:GITHUB_ENV
+          echo "build_time=$build_time" >> $env:GITHUB_ENV
         shell: pwsh
 
       - name: Build and push Docker image
