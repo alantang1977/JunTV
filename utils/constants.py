@@ -35,6 +35,10 @@ ipv6_result_path = os.path.join(output_dir, "ipv6/result.txt")
 
 rtmp_data_path = os.path.join(output_dir, "data/rtmp.db")
 
+channel_results_path = os.path.join(output_dir, "data/channel_results.db")
+
+screenshot_dir = os.path.join(output_dir, "screenshots")
+
 hls_result_path = os.path.join(output_dir, "hls.txt")
 
 hls_ipv4_result_path = os.path.join(output_dir, "ipv4/hls.txt")
@@ -45,6 +49,8 @@ cache_path = os.path.join(output_dir, "data/cache.gz")
 
 frozen_path = os.path.join(output_dir, "data/frozen.gz")
 
+run_state_path = os.path.join(output_dir, "data/run_state.json")
+
 speed_test_log_path = os.path.join(output_dir, "log/speed_test.log")
 
 result_log_path = os.path.join(output_dir, "log/result.log")
@@ -54,6 +60,16 @@ statistic_log_path = os.path.join(output_dir, "log/statistic.log")
 unmatch_log_path = os.path.join(output_dir, "log/unmatch.log")
 
 log_path = os.path.join(output_dir, "log/log.log")
+
+runtime_jsonl_path = os.path.join(output_dir, "log/runtime.jsonl")
+
+speed_test_jsonl_path = os.path.join(output_dir, "log/speed_test.jsonl")
+
+result_jsonl_path = os.path.join(output_dir, "log/result.jsonl")
+
+statistic_jsonl_path = os.path.join(output_dir, "log/statistic.jsonl")
+
+unmatch_jsonl_path = os.path.join(output_dir, "log/unmatch.jsonl")
 
 url_host_pattern = re.compile(r"((https?|rtmp|rtsp)://)?([^:@/]+(:[^:@/]*)?@)?(\[[0-9a-fA-F:]+]|([\w-]+\.)+[\w-]+)")
 

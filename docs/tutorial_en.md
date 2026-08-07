@@ -1,18 +1,26 @@
 # Tutorial
 
-[中文](./tutorial.md) | English
-
 <div align="center">
-  <img src="../static/images/logo.svg" alt="IPTV-API logo"  width="120" height="120"/>
+  <a href="../README_en.md">Project home</a> ·
+  <a href="./README.md">Documentation</a> ·
+  <a href="./config_en.md">Configuration</a> ·
+  <a href="./tutorial.md">中文</a> | English
 </div>
 
-<p>
-    <br>
-    ⚡️ IPTV live-source automatic update tool that supports automatic collection, multi-source aggregation, availability validation, speed-test filtering, and playlist generation. Customize channel results with rich configuration, then output them as M3U, TXT, or API endpoints and import them into a player to watch.
-</p>
+> [!TIP]
+> The project supports four ways to run: GitHub Actions, command line, GUI, and Docker. Choose the one that best fits
+> your environment.
 
-There are four installation and running methods in total (Workflows, Command Line, GUI, Docker). Choose the one that
-suits you.
+<details open>
+<summary><strong>Contents</strong></summary>
+
+- [Workflow deployment](#workflow-deployment)
+- [Command Line](#command-line)
+- [GUI Software](#gui-software)
+- [Docker](#docker)
+  - [Streaming Usage Tutorial](#streaming-usage-tutorial)
+
+</details>
 
 ## Workflow deployment
 
@@ -43,6 +51,12 @@ Copy the source code of this repository to your personal account repository.
 
 Since this project will continue to iterate and optimize, if you want to get the latest updates, you can do the
 following:
+
+> [!WARNING]
+> If you only want to update your fork, do not click `Contribute` or `Open pull request` to create a PR.
+> Go to your own repository and use `Sync fork` → `Update branch`.
+> If a synchronization conflict occurs, use `Discard commits` as described below.
+> Create a Pull Request only when you intentionally want to contribute code to the upstream repository.
 
 #### 1. Watch
 
@@ -127,22 +141,11 @@ Adjust the configuration as needed, here is the default configuration descriptio
 [Configuration parameters](./config_en.md)
 
 > [!NOTE]
-> 1. For enabling interface information display, since some players (such as `PotPlayer`) do not support parsing
-     interface
-     supplementary information, causing playback failure, you can modify the configuration: `open_url_info = False` (
-     GUI:
-     uncheck display interface information) to disable this feature.
-> 2. If your network supports IPv6, you can modify the configuration: `ipv6_support = True` (GUI: Check
-     `Force assume the current network supports IPv6`) to skip the support check.
-> 3. To specify request headers for playback/speed testing, configure the global `user_agent` (a unified UA), or append
-     `UA=value` after a subscription URL in `config/subscribe.txt` (for a single subscription source); the UA is written
-     into the `.m3u` result without enabling `open_headers`.
-> 4. After configuring `location` / `isp`, non-matching interfaces are filtered out directly by default; if you enable
-     `open_supply = True`, non-matching interfaces are no longer dropped but downranked to the end of the channel result
-     as a supplement, avoiding the accidental removal of usable interfaces.
-> 5. Use `sort_by` to customize the sorting priority of interfaces within each channel, comma-separated, with optional
-     values `speed`, `delay`, and `resolution`, compared in order from front to back, e.g. `resolution,speed` sorts by
-     resolution first and then by speed.
+> 1. Some players, such as `PotPlayer`, cannot parse supplementary interface information. Set `open_url_info = False` (GUI: clear “Display interface information”) if this prevents playback.
+> 2. If your network supports IPv6, set `ipv6_support = True` (GUI: select “Force assume the current network supports IPv6”) to skip detection.
+> 3. For playback/speed-test request headers, configure the global `user_agent` or append `UA=value` to a URL in `config/subscribe.txt`. The UA is written to `.m3u` results without requiring `open_headers`.
+> 4. `location` and `isp` filter out non-matching interfaces by default. With `open_supply = True`, they are retained as lower-priority fallbacks.
+> 5. Use `sort_by` with comma-separated `speed`, `delay`, and `resolution` values. For example, `resolution,speed` sorts by resolution and then speed.
 
 #### Add data sources and more
 
@@ -206,6 +209,11 @@ Adjust the configuration as needed, here is the default configuration descriptio
   interface address, only filling in the interface address will apply to all channels, multiple records are entered on
   separate lines.
 
+> [!TIP]
+> If a run produces no channel data, the logs distinguish between missing sources, empty subscription responses,
+> unmatched channels, and results removed by filters. In the GUI, use “Configure sources” on the dashboard. Docker users
+> should verify that `/iptv-api/config/subscribe.txt` inside the container is not empty.
+
 ### Run Update
 
 If your template and configuration modifications are correct, you can configure `Actions` to achieve automatic updates.
@@ -251,6 +259,7 @@ Wait a moment, and you will see that your first update workflow is running!
 > The running time depends on the number of channels and pages in your template and other configurations, and also
 > largely depends on the current network conditions. Please be patient. The default template and configuration usually
 > take about 15 minutes.
+
 ![Workflow in progress](./images/workflow-running.png 'Workflow in progress')
 
 ##### (4) Cancel the running Workflow:
@@ -313,16 +322,40 @@ pipenv run service
 
 ## GUI Software
 
-1. Download the [IPTV-API Update Software](https://github.com/Guovin/iptv-api/releases), open the software, and click
-   Start to perform the update.
+The desktop GUI for Windows and macOS provides one-click updates, live progress, channel and result management, retesting, RTMP monitoring, source configuration, and task history. Docker deployments use web result pages and do not include this desktop interface.
 
-2. Or run the following command in the project directory to open the GUI software:
+<div align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="./images/desktop-ui-en-dark.png">
+    <source media="(prefers-color-scheme: light)" srcset="./images/desktop-ui-en.png">
+    <img src="./images/desktop-ui-en.png" alt="IPTV-API desktop GUI in English" width="100%"/>
+  </picture>
+  <details>
+    <summary>🌓 Toggle display mode</summary>
+    <picture>
+      <source media="(prefers-color-scheme: dark)" srcset="./images/desktop-ui-en.png">
+      <source media="(prefers-color-scheme: light)" srcset="./images/desktop-ui-en-dark.png">
+      <img src="./images/desktop-ui-en-dark.png" alt="IPTV-API desktop GUI in English alternate theme" width="100%"/>
+    </picture>
+  </details>
+</div>
+
+Install dependencies and start it from the project directory:
 
 ```shell
+pipenv install --dev
 pipenv run ui
 ```
 
-![IPTV-API Update Software](./images/ui.png 'IPTV-API Update Software')
+Build the desktop application for the current platform:
+
+```shell
+pipenv run ui_build
+```
+
+Settings are saved to `config/user_config.ini`; generated results, channel snapshots, task history, and logs are stored under `output/`. A packaged application places these directories in the operating system's application data directory on first launch. Install FFmpeg before enabling resolution probing. The Windows package can include nginx-rtmp. On macOS, install an nginx build with the RTMP module; the app generates and starts an isolated configuration automatically, while `IPTV_API_NGINX_PATH` and `IPTV_API_NGINX_RTMP_MODULE` can override discovery.
+
+The legacy Tkinter interface is deprecated, retained temporarily for existing users, and scheduled for removal in a future release. It no longer receives maintenance, bug fixes, or new features. During the transition, start it with `pipenv run legacy_ui` or package it with `pipenv run legacy_ui_build`.
 
 ## Docker
 
@@ -357,22 +390,25 @@ docker run -d -p 80:8080 guovern/iptv-api
 
 **Environment variables:**
 
-| Variable        | Description                                                                                                      | Default   |
-|:----------------|:-----------------------------------------------------------------------------------------------------------------|:----------|
-| PUBLIC_DOMAIN   | Public domain or IP address, determines external access and the Host used in push stream results                 | 127.0.0.1 |
-| PUBLIC_PORT     | Public port, set to the mapped port, determines external access address and the port used in push stream results | 80        |
-| NGINX_HTTP_PORT | Nginx HTTP service port, needs to be mapped for external access                                                  | 8080      |
+| Variable        | Description                                                                                         | Default   |
+|:----------------|:----------------------------------------------------------------------------------------------------|:----------|
+| PUBLIC_URL      | Recommended complete public URL, such as `http://192.168.1.10` or `https://iptv.example.com`         |           |
+| PUBLIC_DOMAIN   | Compatibility setting: public domain or IP used when `PUBLIC_URL` is empty                           | 127.0.0.1 |
+| PUBLIC_PORT     | Compatibility setting: mapped host port used when `PUBLIC_URL` is empty                              | 80        |
+| NGINX_HTTP_PORT | Advanced compatibility setting: internal container HTTP port; normally keep the default              | 8080      |
 
 > When IPv6 is enabled on the host/Docker, the container automatically listens on IPv6 addresses as well, with no extra configuration; in IPv4-only or IPv6-disabled environments it is skipped automatically.
 
 If you need to modify environment variables, add the following parameters after the above run command:
 
 ```bash
-# Modify public domain
--e PUBLIC_DOMAIN=your.domain.com
-# Modify public port
--e PUBLIC_PORT=80
+# Recommended: set the complete public URL
+-e PUBLIC_URL=https://iptv.example.com
 ```
+
+With the repository Compose file, change only the host port through `PORT`, for example
+`PORT=8088 docker compose up -d`.
+An unset or empty `PUBLIC_URL` does not override `public_url` in the mounted configuration.
 
 In addition to the environment variables listed above, you can also override
 the [configuration items](../docs/config_en.md) in the configuration file via environment variables.
@@ -409,16 +445,10 @@ generated result files directly on the host. Append the following options to the
 **RTMP Streaming:**
 
 > [!NOTE]
-> 1. If deploying on a server, be sure to set the `PUBLIC_DOMAIN` environment variable to the server's domain name or IP
-     address and the `PUBLIC_PORT` environment variable to the public port; otherwise the streaming addresses will not
-     be accessible.
-> 2. When streaming is enabled, obtained interfaces (e.g., subscription sources) will be streamed by default; only use
-     this for content you own, are explicitly authorized to redistribute, or need for closed/internal testing.
-> 3. To stream local video sources, create an `hls` folder under the `config` directory and place video files named
-     after the channel; the program will automatically stream them to the corresponding channels.
-> 4. When using this project in Mainland China, make sure the content authorization, copyright, network-audiovisual,
-     and broadcasting-related compliance requirements are satisfied. Do not use it to distribute, relay, or publicly
-     expose unauthorized live streams or program sources.
+> 1. For server deployments, set the complete public address through `PUBLIC_URL`; legacy `PUBLIC_DOMAIN` and `PUBLIC_PORT` remain supported.
+> 2. When streaming is enabled, obtained interfaces such as subscription sources are streamed by default. Use this only for content you own, are authorized to redistribute, or need for closed/internal testing.
+> 3. To stream local videos, create `config/hls` and place files named after their channels in it. The program streams them to the corresponding channels.
+> 4. In Mainland China, ensure that content authorization, copyright, network-audiovisual, and broadcasting requirements are satisfied. Do not distribute, relay, or publicly expose unauthorized live streams or program sources.
 
 | Streaming Endpoint | Description                          |
 |:-------------------|:-------------------------------------|
@@ -433,18 +463,18 @@ generated result files directly on the host. Append the following options to the
 | /hls/ipv6/m3u      | hls ipv6 m3u streaming endpoint      |
 | /stat              | Streaming status statistics endpoint |
 
-##### Streaming Usage Tutorial
+### Streaming Usage Tutorial
 
 Docker enables streaming with minimal configuration and placing local video files in the right folder. Below are two
 common streaming scenarios: subscription (online) sources and local video files. Use this only for content you are
 authorized to relay or for closed/internal technical testing.
 
-1) Preparations before start (example: Docker Compose)
+#### 1. Preparations before start (Docker Compose example)
 
 - Use the repository's `docker-compose.yml` and confirm the following environment variables before starting:
-    - `PUBLIC_DOMAIN`: public domain or public IP used in stream Host headers.
-    - `PUBLIC_PORT`: public port mapped on the host (affects final access addresses).
-    - `NGINX_HTTP_PORT`: container internal HTTP port (normally keep default).
+    - `PORT`: user-facing port mapped on the host.
+    - `PUBLIC_URL`: recommended complete public URL used to generate streaming and playlist links.
+    - `NGINX_HTTP_PORT`: advanced compatibility setting; normally keep the internal container port unchanged.
 - Make sure the `config` directory is mounted into the container (default `/iptv-api/config`) so you can edit templates,
   add local videos, and place subscription files on the host.
 
@@ -458,29 +488,28 @@ services:
     restart: unless-stopped
 
     ports:
-      - "80:8080" # host_port:container_http_port
+      - "${PORT:-80}:8080" # PORT is user-facing; 8080 is the fixed internal container port
 
     volumes:
       - /iptv-api/config:/iptv-api/config # Change to host configuration folder path:container configuration folder path
       - /iptv-api/output:/iptv-api/output
 
     environment:
-      PUBLIC_SCHEME: "http"
-      PUBLIC_DOMAIN: "192.168.1.95" # Change to your server domain or IP address. Here it uses my LAN IP as an example.
-      PUBLIC_PORT: "80" # Change to public port
-      NGINX_HTTP_PORT: "8080" # Default HTTP service port inside the container
+      PUBLIC_URL: "${PUBLIC_URL:-http://192.168.1.95}" # Change to the complete public URL
+      PUBLIC_PORT: "${PORT:-80}" # Legacy compatibility value synchronized from PORT
+      NGINX_HTTP_PORT: "8080" # Advanced compatibility setting; normally do not change
       CDN_URL: ""
       HTTP_PROXY: ""
 ```
 
-2) Subscription source streaming (online sources)
+#### 2. Subscription source streaming (online sources)
 
 - Add subscription URLs (txt or m3u) to `config/subscribe.txt`. On startup the program will read the subscriptions and
   publish streams for the channels found.
 - Streaming endpoints to view streamed channels:
     - `/hls/txt`, `/hls/m3u` (and their ipv4/ipv6 variants)
 
-3) Local video streaming (server video files)
+#### 3. Local video streaming (server video files)
 
 - Create an `hls` folder under the mounted `config` directory (for example `/iptv-api/config/hls` on the host).
 - Put video files named exactly as the channel titles used in your template (e.g., `海洋.mp4`). The program will
@@ -511,7 +540,7 @@ Guangdong Satellite
 海洋
 ```
 
-4) Start and verify
+#### 4. Start and verify
 
 - Start the service (example using Compose):
 
@@ -524,24 +553,24 @@ docker compose up -d
     - View streaming results (txt): visit `/hls/txt` to see current stream addresses and descriptions.
     - Use `/hls/m3u` to load the playlist into a player or `/hls/txt` for a plain list.
 
-5) Monitoring and logs
+#### 5. Monitoring and logs
 
 - Use the `/stat` endpoint to see current streaming counts, traffic, and basic statistics.
 - Container logs provide detailed stream start/stop messages:
     - Logs show when a channel starts streaming and when idle channels stop.
 
-6) Common tips and tuning
+#### 6. Common tips and tuning
 
-- Public access & firewall: Make sure `PUBLIC_PORT` is open to the outside (firewall, cloud security groups, etc.).
-  RTMP/HTTP ports must be accessible externally.
-- Domain and certificates: If using a domain with HTTPS, set `PUBLIC_DOMAIN` to your domain and `PUBLIC_SCHEME` to
-  `https`. Manage TLS/HTTPS via an external reverse proxy or your hosting setup.
+- Public access & firewall: Make sure the HTTP port in `PUBLIC_URL` and the RTMP port are externally accessible through
+  firewalls and cloud security groups.
+- Domain and certificates: For HTTPS, set `PUBLIC_URL` directly to `https://your-domain` and manage TLS through an
+  external reverse proxy or your hosting setup.
 - Performance & concurrency: Local streaming consumes CPU and bandwidth. Adjust `rtmp_max_streams` to limit concurrent
   streams and avoid overloading the server.
 - Idle stop: `rtmp_idle_timeout` controls how long a stream stays active with no viewers (in seconds); tune it per your
   needs.
 
-7) Useful RTMP-related configuration options
+#### 7. Useful RTMP-related configuration options
 
 ```ini
 # RTMP channel idle stop timeout (seconds)

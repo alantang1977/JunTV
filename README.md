@@ -2,16 +2,15 @@
   <img src="./static/images/logo.svg" alt="IPTV-API logo"  width="120" height="120"/>
 </div>
 
-<p>
-  <br>
+<h1 align="center">IPTV-API</h1>
+
+<p align="center">
   ⚡️IPTV直播源自动更新工具，支持自动采集、多源聚合、可用性校验、测速筛选与播放列表生成。可通过丰富配置自定义频道结果，并以 M3U、TXT 或 API 接口形式输出，导入播放器即可观看。
 </p>
 
-[![Support me on Ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/govin)
-
 <p align="center">
-  <br>
   <a href="https://trendshift.io/repositories/12327" target="_blank"><img src="https://trendshift.io/api/badge/repositories/12327" alt="Guovin%2Fiptv-api | Trendshift" style="width: 250px; height: 55px;" width="250" height="55"/></a>
+  <a href="https://trendshift.io/repositories/12327?utm_source=trendshift-badge&amp;utm_medium=badge&amp;utm_campaign=badge-trendshift-12327" target="_blank" rel="noopener noreferrer"><img src="https://trendshift.io/api/badge/trendshift/repositories/12327/weekly" alt="Guovin%2Fiptv-api | Trendshift" width="250" height="55"/></a>
 </p>
 
 <p align="center">
@@ -19,7 +18,7 @@
     <img src="https://img.shields.io/github/v/release/guovin/iptv-api?label=Version" />
   </a>
   <a href="https://www.python.org/">
-    <img src="https://img.shields.io/badge/python-3.13-47c219?label=Python" />
+    <img src="https://img.shields.io/badge/python-3.14-47c219?label=Python" />
   </a>
   <a href="https://github.com/Guovin/iptv-api/releases/latest">
     <img src="https://img.shields.io/github/downloads/guovin/iptv-api/total?label=GUI%20Downloads" />
@@ -41,20 +40,43 @@
 
 </div>
 
+<div align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="./docs/images/desktop-ui-dark.png">
+    <source media="(prefers-color-scheme: light)" srcset="./docs/images/desktop-ui.png">
+    <img src="./docs/images/desktop-ui.png" alt="IPTV-API 新版桌面端界面" width="100%"/>
+  </picture>
+  <details>
+    <summary>🌓 切换显示模式</summary>
+    <picture>
+      <source media="(prefers-color-scheme: dark)" srcset="./docs/images/desktop-ui.png">
+      <source media="(prefers-color-scheme: light)" srcset="./docs/images/desktop-ui-dark.png">
+      <img src="./docs/images/desktop-ui-dark.png" alt="IPTV-API 新版桌面端另一主题界面" width="100%"/>
+    </picture>
+  </details>
+  <sub><strong>Windows / macOS 桌面 GUI</strong> · 界面直观，操作更高效</sub>
+</div>
+
+<details open>
+<summary><strong>目录</strong></summary>
+
 - [✅ 核心特性](#核心特性)
 - [⚙️ 配置参数](#配置)
 - [🚀 快速上手](#快速上手)
     - [配置与结果目录](#配置与结果目录)
     - [工作流](#工作流)
     - [命令行](#命令行)
-    - [GUI软件](#GUI-软件)
-    - [Docker](#Docker)
+    - [GUI 软件](#gui-软件)
+    - [Docker](#docker)
+- [📚 文档中心](./docs/README.md)
 - [📖 详细教程](./docs/tutorial.md)
 - [🗓️ 更新日志](./CHANGELOG.md)
 - [👀 关注](#关注)
 - [❤️ 捐赠](#捐赠)
 - [⚠️ 免责声明](#免责声明)
 - [⚖️ 许可证](#许可证)
+
+</details>
 
 ## 赞助商
 
@@ -92,17 +114,19 @@
 | **EPG**   |  ✅   | 获取并显示频道预告内容                                |
 | **频道台标**  |  ✅   | 自定义频道台标，支持本地添加或远程库                         |
 | **测速验效**  |  ✅   | 获取延迟、速率、分辨率、帧率，过滤无效接口，支持实时输出结果             |
+| **播放截图**  |  ✅   | 可选自动截图，辅助验证频道内容，支持 GUI 预览与批量刷新 |
 | **广告过滤**  |  ✅   | 自动识别并过滤无信号/广告等循环占位源                        |
 | **高级偏好**  |  ✅   | 速率、分辨率、黑/白名单、归属地与运营商自定义过滤                  |
 | **结果管理**  |  ✅   | 结果分类存储与访问、日志记录、未匹配频道记录、统计分析、冻结过滤/解冻回归、数据缓存 |
 | **定时任务**  |  ✅   | 定时或间隔执行更新                                  |
+| **暂停与继续** |  ✅   | 桌面端更新过程中可暂停，并从当前进度继续                         |
 | **多平台部署** |  ✅   | 工作流、命令行、GUI 软件、Docker (amd64/arm64/arm v7) |
 | **更多功能**  |  ✨   | 详见[配置参数](#配置)章节                            |
 
 ## 配置
 
 > [!NOTE]\
-> 以下配置项位于`config/config.ini`文件中，支持通过配置文件或环境变量进行修改，修改保存后重启即可生效
+> 以下配置项位于 `config/config.ini` 文件中，支持通过配置文件或环境变量修改，保存后重启即可生效。也可查看独立的[配置参数文档](./docs/config.md)。
 
 <details>
 <summary>点击展开查看配置参数</summary>
@@ -117,7 +141,7 @@
 | open_epg                 | 开启 EPG 功能，支持频道显示预告内容                                                                                                 | True                                     |
 | open_subscribe_epg       | 开启从订阅源 m3u 头部 url-tvg/x-tvg-url 自动提取 EPG 地址，并入 EPG 源一起合并，无需手动维护 `config/epg.txt`；epg.txt 源优先，订阅源仅补充未覆盖频道；需 open_epg = True | True                                     |
 | open_m3u_result          | 开启转换生成 m3u 文件类型结果链接，支持显示频道图标                                                                                         | True                                     |
-| urls_limit               | 单个频道接口数量                                                                                                             | 5                                        |
+| output_urls_limit       | 每个频道最终导出的接口数量；旧版 `urls_limit` 仍兼容                                                                           | 5                                        |
 | update_time_position     | 更新时间显示位置，需要开启 open_update_time 才能生效，可选值: top、bottom；top: 显示于结果顶部，bottom: 显示于结果底部                                     | top                                      |
 | language                 | 系统语言设置；可选值: zh_CN、en                                                                                                 | zh_CN                                    |
 | update_mode              | 定时执行更新时间模式，不作用于工作流；可选值: interval、time； interval: 按间隔时间执行，time: 按指定时间点执行                                              | interval                                 |
@@ -129,9 +153,11 @@
 | final_file               | 生成结果文件路径                                                                                                             | output/result.txt                        |
 | open_realtime_write      | 开启实时写入结果文件，在测速过程中可以访问并使用更新结果                                                                                         | True                                     |
 | open_service             | 开启页面服务，用于控制是否启动结果页面服务；如果使用青龙等平台部署，有专门设定的定时任务，需要更新完成后停止运行，可以关闭该功能                                                     | True                                     |
-| app_port                 | 页面服务端口，用于控制页面服务的端口号                                                                                                  | 5180                                     |
-| public_scheme            | 公网协议；可选值: http、https                                                                                                 | http                                     |
-| public_domain            | 公网 Host 地址，用于生成结果中的访问地址，默认使用本机 IP                                                                                    | 127.0.0.1                                |
+| service_port             | HTTP 服务访问端口；桌面版启用推流时由 Nginx 监听，新配置通常只需修改此端口                                                                    | 8080                                     |
+| public_url               | 推荐的公网完整访问地址，例如 `https://iptv.example.com` 或 `http://host:8088`；用于统一生成播放列表、EPG、台标和服务链接                                |                                          |
+| app_port                 | 高级兼容设置：Flask 内部 API 端口，通常无需修改，也不应作为用户访问端口                                                                        | 5180                                     |
+| public_scheme            | 高级兼容设置：旧版公网协议，仅在 `public_url` 留空时生效；可选值: http、https                                                            | http                                     |
+| public_domain            | 高级兼容设置：旧版公网 Host，仅在 `public_url` 留空时生效，默认使用本机 IP                                                                 | 127.0.0.1                                |
 | cdn_url                  | CDN 代理加速地址，用于订阅源、频道图标等资源的加速访问；支持配置多个（用英文逗号分隔），订阅源与 EPG 按顺序逐个回退拉取，任一镜像成功即停，频道图标使用第一个地址                                                                                        |                                          |
 | http_proxy               | HTTP 代理地址，用于获取订阅源等网络请求                                                                                               |                                          |
 | open_local               | 开启本地源功能，将使用模板文件与本地源文件（local.txt）中的数据                                                                                 | True                                     |
@@ -141,15 +167,21 @@
 | open_headers             | 开启使用 M3U 内含的请求头验证信息，用于测速等操作，个别播放器可能不支持播放这类含验证信息的接口                                                          | True                                     |
 | user_agent               | 全局请求 User-Agent，用于拉取订阅源、测速以及写入 m3u 结果（无需开启 open_headers），留空则使用内置默认 UA；优先级：接口自带 UA > 订阅地址 UA > 全局 UA > 内置默认 UA                            |                                          |
 | open_speed_test          | 开启测速功能，获取响应时间、速率、分辨率                                                                                                 | True                                     |
+| speed_test_mode          | 测速工作模式：`quick`、`full` 或 `manual`；`manual` 仅采集候选，测速由 GUI 操作触发                                                       | quick                                    |
+| speed_test_target        | 快速测速每个频道的有效结果目标；设为 `0` 跟随 `output_urls_limit`                                                                 | 0                                        |
+| quick_test_target        | `speed_test_target` 的可读别名；非 0 时优先作为快速测速目标                                                               | 0                                        |
+| open_stream_screenshot   | 自动为可播放候选接口获取播放截图；会增加 FFmpeg 解码开销和更新时间，关闭时仍可在 GUI 手动获取                                             | False                                    |
+| stream_screenshot_timeout | 单个接口截图超时时长，单位秒(s)                                                                                                          | 5                                        |
+| stream_screenshot_width  | 播放截图最大宽度，按原始宽高比缩放                                                                                                       | 640                                      |
 | open_filter_resolution   | 开启分辨率过滤，低于最小分辨率（min_resolution）的接口将会被过滤，GUI 用户需要手动安装 FFmpeg，程序会自动调用 FFmpeg 获取接口分辨率，推荐开启，虽然会增加测速阶段耗时，但能更有效地区分是否可播放的接口 | True                                     |
 | open_filter_speed        | 开启速率过滤，低于最小速率（min_speed）的接口将会被过滤                                                                                     | True                                     |
 | open_filter_ad           | 开启广告过滤，自动识别并过滤无信号/广告等循环占位源（含 #EXT-X-ENDLIST 的短循环列表，或片段地址包含广告关键字），复用测速阶段已抓取的播放列表进行判断，不增加额外请求与测速耗时                            | True                                     |
-| open_full_speed_test     | 开启全量测速，频道下所有接口（白名单除外）都进行测速，关闭则当测速有效结果数量达到urls_limit后停止剩余接口测速                                                         | False                                    |
+| open_full_speed_test     | 开启全量测速，频道下所有候选接口（白名单除外）都进行测速；关闭时达到 `speed_test_target` 后停止该频道剩余测速                   | False                                    |
 | open_supply              | 开启补偿机制模式，用于控制当频道接口数量不足时，自动将不满足条件（例如低于最小速率）但可能可用的接口添加至结果中，从而避免结果为空的情况；开启后，不符合 location/isp 归属地或运营商的接口也不再直接丢弃，而是降权排到该频道结果的末尾作为补充                                                 | False                                    |
 | sort_by                  | 结果排序维度，控制每个频道内接口的排序优先级，按从前到后的顺序依次比较，逗号分隔；可选值: speed（速率，高优先）、delay（延迟，低优先）、resolution（分辨率，高优先），例如: resolution,speed                                              | speed                                    |
 | min_resolution           | 接口最小分辨率，需要开启 open_filter_resolution 才能生效                                                                             | 1280x720                                 |
 | max_resolution           | 接口最大分辨率，需要开启 open_filter_resolution 才能生效                                                                             | 3840x2160                                |
-| min_speed                | 接口最小速率（单位 M/s），需要开启 open_filter_speed 才能生效                                                                           | 0.5                                      |
+| min_speed                | 接口最小速率（单位 MiB/s），需要开启 open_filter_speed 才能生效                                                                         | 0.5                                      |
 | resolution_speed_map     | 分辨率与速率映射关系，用于控制不同分辨率接口的最低速率要求，格式为 resolution:speed，多个映射关系逗号分隔                                                        | 1280x720:0.2,1920x1080:0.5,3840x2160:1.0 |
 | performance_mode        | 性能模式；`auto` 根据设备或容器的 CPU、内存自动选择，`powersave` 优先降低资源消耗，`balance` 平衡资源与速度，`fast` 充分利用高性能设备                                                | auto                                     |
 | speed_test_limit         | 测速网络并发高级覆盖值；`0` 表示由性能模式自动决定，大于 `0` 时覆盖自动测速并发，不影响媒体探测和源抓取并发                                                                        | 0                                        |
@@ -168,8 +200,8 @@
 | logo_type                | 频道台标文件类型                                                                                                             | png                                      |
 | open_subscribe_logo      | 开启优先使用订阅源 m3u 中自带的 tvg-logo 台标地址，仅当订阅源未提供时才回退到台标库                                                                        | True                                     |
 | open_rtmp                | 开启 RTMP 推流功能，仅建议用于自有或已授权内容，需要安装 FFmpeg，利用本地带宽提升接口播放体验                                                                    | True                                     |
-| nginx_http_port          | Nginx HTTP 服务端口，用于 RTMP 推流转发的 HTTP 服务端口                                                                              | 8080                                     |
-| nginx_rtmp_port          | Nginx RTMP 服务端口，用于 RTMP 推流转发的 RTMP 服务端口                                                                              | 1935                                     |
+| nginx_http_port          | 高级兼容设置：旧版 HTTP 端口名；新配置请使用 `service_port`                                                                            | 8080                                     |
+| nginx_rtmp_port          | 高级设置：Nginx RTMP 协议端口，仅推流客户端需要                                                                                       | 1935                                     |
 | rtmp_idle_timeout        | RTMP 频道接口空闲停止推流超时时长，单位秒(s)，用于控制接口无人观看时超过该时长后停止推流，调整此值能优化服务器资源占用                                                      | 300                                      |
 | rtmp_max_streams         | RTMP 推流最大并发数量，用于控制同时推流的频道数量，数值越大服务器压力越大，调整此值能优化服务器资源占用                                                               | 10                                       |
 | rtmp_transcode_mode      | 推流转码模式，copy 则不进行转码，以复制方式输出，可以最大程度节省CPU消耗，auto 则自适应匹配播放器进行转码，会增加CPU消耗但能提升兼容性                                          | copy                                     |
@@ -201,10 +233,13 @@ iptv-api/                  # 项目根目录
     └── result.m3u/txt     # m3u/txt结果
     └── hls.m3u/txt        # RTMP hls推流结果
     └── log                # 日志文件目录
+        └── log.log        # 带时间、级别和运行 ID 的运行日志
+        └── runtime.jsonl  # 结构化运行事件
         └── result.log     # 有效结果日志
         └── speed_test.log # 测速日志
         └── statistic.log  # 统计结果日志
         └── unmatch.log    # 未匹配频道记录
+        └── *.jsonl        # 对应日志的结构化 JSON Lines 版本
 ```
 
 ### 工作流
@@ -235,19 +270,26 @@ pipenv run service
 
 ### GUI 软件
 
-1. 下载[IPTV-API 更新软件](https://github.com/Guovin/iptv-api/releases)，打开软件，点击启动，即可进行更新
+新版桌面 GUI 是 Windows 与 macOS 当前唯一受支持的图形界面，提供一键更新、实时进度、频道与结果管理、重新测速、RTMP 推流监控、数据源配置及任务历史。Docker 部署使用 Web 结果页，不包含此桌面界面。
 
-2. 或者在项目目录下运行以下命令，即可打开 GUI 软件：
+安装依赖并启动桌面端：
 
 ```shell
+pipenv install --dev
 pipenv run ui
 ```
 
-<img src="./docs/images/ui.png" alt="IPTV-API更新软件" title="IPTV-API更新软件" style="height:600px" />
+构建当前平台的安装包：
+
+```shell
+pipenv run ui_build
+```
+
+旧版 Tkinter 界面已弃用，仅为兼容现有用户而临时保留，并将在后续版本中移除。该界面不再维护、修复问题或新增功能；过渡期间仍可通过 `pipenv run legacy_ui` 启动，并通过 `pipenv run legacy_ui_build` 打包。分辨率检测需要系统安装 FFmpeg。Windows 可使用随包提供的 nginx-rtmp；macOS 会自动检测系统中带 RTMP 模块的 nginx，也可通过 `IPTV_API_NGINX_PATH` 和 `IPTV_API_NGINX_RTMP_MODULE` 指定可执行文件与动态模块。
 
 ### Docker
 
-#### 1. Compose部署（推荐）
+#### 1. Compose 部署（推荐）
 
 下载[docker-compose.yml](./docker-compose.yml)或复制内容创建（内部参数可按需更改），在文件所在路径下运行以下命令即可部署：
 
@@ -277,22 +319,25 @@ docker run -d -p 80:8080 guovern/iptv-api
 
 **环境变量：**
 
-| 变量              | 描述                                | 默认值       |
-|:----------------|:----------------------------------|:----------|
-| PUBLIC_DOMAIN   | 公网域名或IP地址，决定外部访问或推流结果的Host地址      | 127.0.0.1 |
-| PUBLIC_PORT     | 公网端口，设置为映射后的端口，决定外部访问地址和推流结果地址的端口 | 80        |
-| NGINX_HTTP_PORT | HTTP服务端口，外部访问需要映射该端口              | 8080      |
+| 变量              | 描述                                                | 默认值       |
+|:----------------|:--------------------------------------------------|:----------|
+| PUBLIC_URL      | 推荐：完整公网地址，例如 `http://192.168.1.10` 或 `https://iptv.example.com` |           |
+| PUBLIC_DOMAIN   | 兼容配置：`PUBLIC_URL` 留空时使用的公网域名或 IP                    | 127.0.0.1 |
+| PUBLIC_PORT     | 兼容配置：`PUBLIC_URL` 留空时使用的宿主机映射端口                    | 80        |
+| NGINX_HTTP_PORT | 高级兼容配置：容器内部 HTTP 端口，通常保持默认                        | 8080      |
 
 > 当宿主机/Docker 已启用 IPv6 时，容器会自动同时监听 IPv6 地址，无需额外配置；纯 IPv4 或禁用 IPv6 的环境则自动跳过。
 
 如果需要修改环境变量，在上述运行命令后添加以下参数：
 
 ```bash
-# 修改公网域名
--e PUBLIC_DOMAIN=your.domain.com
-# 修改公网端口
--e PUBLIC_PORT=80
+# 推荐：直接设置完整公网地址
+-e PUBLIC_URL=https://iptv.example.com
 ```
+
+使用仓库中的 Compose 文件时，只需通过 `PORT` 修改宿主机端口，例如
+`PORT=8088 docker compose up -d`；Compose 会同时更新端口映射和兼容的 `PUBLIC_PORT`。
+未设置或留空的 `PUBLIC_URL` 不会覆盖挂载配置文件中的 `public_url`。
 
 除了以上环境变量，还支持通过环境变量覆盖配置文件中的[配置项](#配置)
 
@@ -324,10 +369,12 @@ docker run -d -p 80:8080 guovern/iptv-api
 | /log/statistic  | 统计结果的日志     |
 | /log/unmatch    | 未匹配频道的日志    |
 
+日志接口默认返回兼容的纯文本格式；添加 `?format=jsonl` 可获取结构化 JSON Lines。CLI 在交互式终端使用动态多任务进度，Docker、CI、重定向输出或设置 `IPTV_API_PLAIN_OUTPUT=1` 时自动使用稳定的逐行输出。
+
 **RTMP 推流：**
 
 > [!NOTE]
-> 1. 如果是服务器部署，请务必配置`PUBLIC_DOMAIN`环境变量为服务器域名或IP地址，`PUBLIC_PORT`环境变量为公网端口，否则推流地址无法访问
+> 1. 如果是服务器部署，建议通过 `PUBLIC_URL` 配置完整公网地址；旧版 `PUBLIC_DOMAIN` 与 `PUBLIC_PORT` 仍兼容
 > 2. 开启推流后，默认会将获取到的接口（如订阅源）进行推流；请仅对你有明确授权、可合法分发或仅用于内部测试的内容启用该功能
 > 3. 如果需要对本地视频源进行推流，可在`config`目录下新建`hls`文件夹，将以`频道名称命名`的视频文件放入其中，程序会自动推流到对应的频道中
 > 4. 在中国大陆使用时，请特别确认内容授权、版权、网络视听与广播电视等相关合规要求；不要将本项目用于传播、转发或公开分发未经授权的直播源/节目源
@@ -353,9 +400,9 @@ docker run -d -p 80:8080 guovern/iptv-api
 
 ## 关注
 
-### Github
+### GitHub
 
-关注我的Github账号[Guovin](https://github.com/Guovin)，获取更多实用项目
+关注我的 GitHub 账号 [Guovin](https://github.com/Guovin)，获取更多实用项目
 
 ### 微信公众号
 

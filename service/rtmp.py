@@ -7,22 +7,33 @@ import subprocess
 import sys
 import threading
 import time
+import xml.etree.ElementTree as ET
 from collections import OrderedDict
 from functools import lru_cache
+
+import requests
 
 import utils.constants as constants
 from utils.config import config
 from utils.db import ensure_result_data_schema
 from utils.db import get_db_connection, return_db_connection
-from utils.ffmpeg import probe_url_sync
+from utils.ffmpeg import probe_url_sync, resolve_ffmpeg_executable
 from utils.i18n import t
+from utils.rtmp_runtime import rtmp_runtime_status
 from utils.tools import join_url, resource_path, render_nginx_conf
 
-nginx_dir = resource_path(os.path.join('utils', 'nginx-rtmp-win32'))
-nginx_conf_template = resource_path(os.path.join(nginx_dir, 'conf', 'nginx.conf.template'))
-nginx_conf = resource_path(os.path.join(nginx_dir, 'conf', 'nginx.conf'))
-nginx_path = resource_path(os.path.join(nginx_dir, 'nginx.exe'))
-stop_path = resource_path(os.path.join(nginx_dir, 'stop.bat'))
+if sys.platform == "win32":
+    nginx_dir = resource_path(os.path.join('utils', 'nginx-rtmp-win32'))
+    nginx_conf_template = resource_path(os.path.join(nginx_dir, 'conf', 'nginx.conf.template'))
+    nginx_conf = resource_path(os.path.join(nginx_dir, 'conf', 'nginx.conf'))
+    nginx_path = resource_path(os.path.join(nginx_dir, 'nginx.exe'))
+    stop_path = resource_path(os.path.join(nginx_dir, 'stop.bat'))
+else:
+    nginx_dir = resource_path(os.path.join(constants.output_dir, "runtime", "nginx"), persistent=True)
+    nginx_conf_template = resource_path(os.path.join("service", "nginx.conf.template"))
+    nginx_conf = os.path.join(nginx_dir, "conf", "nginx.conf")
+    nginx_path = rtmp_runtime_status().get("executable") or ""
+    stop_path = ""
 app_rtmp_url = f"rtmp://127.0.0.1:{config.nginx_rtmp_port}"
 
 hls_running_streams = OrderedDict()
@@ -34,21 +45,53 @@ HLS_IDLE_TIMEOUT = config.rtmp_idle_timeout
 HLS_WAIT_TIMEOUT = 30
 HLS_WAIT_INTERVAL = 0.5
 MAX_STREAMS = config.rtmp_max_streams
-nginx_dir = resource_path(os.path.join('utils', 'nginx-rtmp-win32'))
-hls_temp_path = resource_path(os.path.join(nginx_dir, 'temp', 'hls')) if sys.platform == "win32" else '/tmp/hls'
+hls_temp_path = resource_path(os.path.join(nginx_dir, 'temp', 'hls'))
 
 _hls_monitor_started_evt = threading.Event()
 _hls_monitor_lock = threading.Lock()
 _libc = ctypes.CDLL(None) if sys.platform.startswith("linux") else None
+_nginx_started_by_app = False
+
+
+def _rtmp_stats_available(timeout: float = 0.5) -> bool:
+    try:
+        response = requests.get(
+            f"http://127.0.0.1:{config.service_port}/stat",
+            timeout=timeout,
+            proxies={"http": None, "https": None, "all": None},
+        )
+        response.raise_for_status()
+        return ET.fromstring(response.content).tag == "rtmp"
+    except (requests.RequestException, ET.ParseError):
+        return False
+
+
+def _wait_for_rtmp_service(timeout: float = 5.0, interval: float = 0.1) -> bool:
+    deadline = time.monotonic() + timeout
+    while True:
+        if _rtmp_stats_available(timeout=min(0.5, max(0.1, timeout))):
+            return True
+        if time.monotonic() >= deadline:
+            return False
+        time.sleep(interval)
+
+
+def _managed_nginx_running() -> bool:
+    pid_path = os.path.join(nginx_dir, "logs", "nginx.pid")
+    try:
+        with open(pid_path, "r", encoding="utf-8") as file:
+            pid = int(file.read().strip())
+        if pid <= 0:
+            return False
+        os.kill(pid, 0)
+        return True
+    except (OSError, TypeError, ValueError):
+        return False
 
 
 def _reserve_stream(channel_id):
-    victims = []
     with STREAMS_LOCK:
-        for running_channel_id, running_process in list(hls_running_streams.items()):
-            if running_process.poll() is not None:
-                hls_running_streams.pop(running_channel_id, None)
-                hls_last_access.pop(running_channel_id, None)
+        _cleanup_dead_streams_locked()
         existing = hls_running_streams.get(channel_id)
         if existing and existing.poll() is None:
             hls_last_access[channel_id] = time.time()
@@ -59,20 +102,34 @@ def _reserve_stream(channel_id):
             hls_last_access.pop(channel_id, None)
         if channel_id in hls_starting_streams:
             return None, False
-        if MAX_STREAMS <= 0:
+        if MAX_STREAMS <= 0 or len(hls_running_streams) + len(hls_starting_streams) >= MAX_STREAMS:
             return None, False
-
-        while len(hls_running_streams) + len(hls_starting_streams) >= MAX_STREAMS:
-            if not hls_running_streams:
-                return None, False
-            oldest_channel_id, oldest_process = hls_running_streams.popitem(last=False)
-            hls_last_access.pop(oldest_channel_id, None)
-            victims.append(oldest_process)
         hls_starting_streams.add(channel_id)
-
-    for process in victims:
-        _terminate_process_safe(process)
     return None, True
+
+
+def _cleanup_dead_streams_locked():
+    for channel_id, process in list(hls_running_streams.items()):
+        if process.poll() is not None:
+            hls_running_streams.pop(channel_id, None)
+            hls_last_access.pop(channel_id, None)
+
+
+def stream_capacity_snapshot():
+    with STREAMS_LOCK:
+        _cleanup_dead_streams_locked()
+        active_streams = list(hls_running_streams)
+        starting_streams = list(hls_starting_streams)
+    active_count = len(active_streams)
+    starting_count = len(starting_streams)
+    return {
+        "max_streams": MAX_STREAMS,
+        "active_count": active_count,
+        "starting_count": starting_count,
+        "available_slots": max(0, MAX_STREAMS - active_count - starting_count),
+        "active_streams": active_streams,
+        "starting_streams": starting_streams,
+    }
 
 
 def _release_stream_reservation(channel_id):
@@ -177,7 +234,10 @@ def _get_video_encoder_args():
     preferred = ['h264_nvenc', 'h264_qsv', 'h264_amf', 'libx264']
 
     try:
-        res = subprocess.run(['ffmpeg', '-hide_banner', '-encoders'],
+        executable = resolve_ffmpeg_executable()
+        if not executable:
+            raise FileNotFoundError("ffmpeg")
+        res = subprocess.run([executable, '-hide_banner', '-encoders'],
                              capture_output=True, text=True, timeout=10)
         enc_list = res.stdout
     except Exception:
@@ -209,7 +269,10 @@ def _get_video_encoder_candidates():
     preferred = ['h264_nvenc', 'h264_qsv', 'h264_amf', 'libx264']
     candidates = []
     try:
-        res = subprocess.run(['ffmpeg', '-hide_banner', '-encoders'], capture_output=True, text=True, timeout=10)
+        executable = resolve_ffmpeg_executable()
+        if not executable:
+            raise FileNotFoundError("ffmpeg")
+        res = subprocess.run([executable, '-hide_banner', '-encoders'], capture_output=True, text=True, timeout=10)
         enc_list = res.stdout or ''
     except Exception:
         enc_list = ''
@@ -243,6 +306,34 @@ def start_hls_to_rtmp(host, channel_id, client_user_agent: str | None = None):
         return _start_reserved_hls_to_rtmp(host, channel_id, client_user_agent)
     finally:
         _release_stream_reservation(channel_id)
+
+
+def start_hls_to_rtmp_async(host, channel_id, client_user_agent: str | None = None):
+    ensure_hls_idle_monitor_started()
+    if not host or not channel_id:
+        return {"accepted": False, "status": "invalid", **stream_capacity_snapshot()}
+
+    existing, reserved = _reserve_stream(channel_id)
+    if existing:
+        return {"accepted": True, "status": "active", **stream_capacity_snapshot()}
+    if not reserved:
+        capacity = stream_capacity_snapshot()
+        if channel_id in capacity["active_streams"]:
+            status = "active"
+        elif channel_id in capacity["starting_streams"]:
+            status = "starting"
+        else:
+            status = "capacity"
+        return {"accepted": status != "capacity", "status": status, **capacity}
+
+    def run():
+        try:
+            _start_reserved_hls_to_rtmp(host, channel_id, client_user_agent)
+        finally:
+            _release_stream_reservation(channel_id)
+
+    threading.Thread(target=run, daemon=True, name=f"rtmp-start-{channel_id}").start()
+    return {"accepted": True, "status": "starting", **stream_capacity_snapshot()}
 
 
 def _start_reserved_hls_to_rtmp(host, channel_id, client_user_agent: str | None = None):
@@ -295,7 +386,11 @@ def _start_reserved_hls_to_rtmp(host, channel_id, client_user_agent: str | None 
         client_forces_transcode = bool(
             client_user_agent and _client_needs_transcode_for_codec(client_user_agent, meta.get('video_codec')))
 
-    base_cmd = ['ffmpeg', '-loglevel', 'error', '-re']
+    executable = resolve_ffmpeg_executable()
+    if not executable:
+        print(t("msg.ffmpeg_not_installed"))
+        return None
+    base_cmd = [executable, '-loglevel', 'error', '-re']
 
     local_loop = False
     try:
@@ -582,23 +677,70 @@ def stop_all_streams():
 
 
 def start_rtmp_service():
-    render_nginx_conf(nginx_conf_template, nginx_conf)
+    global _nginx_started_by_app, nginx_path
+    status = rtmp_runtime_status()
+    if not status.get("available"):
+        print(t(f"msg.rtmp_{status.get('error_code')}", status.get("error_code") or "RTMP unavailable"))
+        return False
+    if _rtmp_stats_available():
+        _nginx_started_by_app = _managed_nginx_running()
+        return True
+    nginx_path = status.get("executable") or nginx_path
+    os.makedirs(os.path.dirname(nginx_conf), exist_ok=True)
+    os.makedirs(os.path.join(nginx_dir, "logs"), exist_ok=True)
+    os.makedirs(hls_temp_path, exist_ok=True)
+    module = status.get("module")
+    directive = f'load_module "{module}";' if module else ""
+    render_nginx_conf(
+        nginx_conf_template,
+        nginx_conf,
+        {"${NGINX_RTMP_MODULE}": directive},
+    )
     original_dir = os.getcwd()
     try:
         os.chdir(nginx_dir)
-        subprocess.Popen([nginx_path], shell=True)
+        if sys.platform == "win32":
+            subprocess.Popen([nginx_path], shell=True)
+        else:
+            args = [nginx_path, "-p", f"{nginx_dir}{os.sep}", "-c", "conf/nginx.conf"]
+            check = subprocess.run(args + ["-t"], capture_output=True, text=True, timeout=10)
+            if check.returncode != 0:
+                raise RuntimeError((check.stderr or check.stdout).strip())
+            launch = subprocess.run(args, capture_output=True, text=True, timeout=10)
+            if launch.returncode != 0:
+                raise RuntimeError((launch.stderr or launch.stdout).strip())
+        _nginx_started_by_app = True
+        if not _wait_for_rtmp_service():
+            stop_rtmp_service()
+            raise RuntimeError(t("msg.rtmp_healthcheck_failed").format(port=config.service_port))
+        return True
     except Exception as e:
         print(t("msg.error_rtmp_service_start_failed").format(info=e))
+        return False
     finally:
         os.chdir(original_dir)
 
 
 def stop_rtmp_service():
+    global _nginx_started_by_app
+    if not _nginx_started_by_app:
+        return
+    original_dir = os.getcwd()
     try:
         os.chdir(nginx_dir)
-        subprocess.Popen([stop_path], shell=True)
+        if sys.platform == "win32":
+            subprocess.Popen([stop_path], shell=True)
+        elif nginx_path and os.path.exists(nginx_conf):
+            subprocess.run(
+                [nginx_path, "-p", f"{nginx_dir}{os.sep}", "-c", "conf/nginx.conf", "-s", "stop"],
+                capture_output=True,
+                timeout=10,
+            )
+        _nginx_started_by_app = False
     except Exception as e:
         print(t("msg.error_rtmp_service_stop_failed").format(info=e))
+    finally:
+        os.chdir(original_dir)
 
 
 atexit.register(stop_all_streams)

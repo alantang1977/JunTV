@@ -26,7 +26,9 @@ from opencc import OpenCC
 import utils.constants as constants
 from utils.config import config, resource_path
 from utils.i18n import t
+from utils.identity import stable_result_id
 from utils.types import ChannelData
+from utils.run_state import read_run_state
 
 opencc_t2s = OpenCC("t2s")
 _channel_alias_instance = None
@@ -164,8 +166,8 @@ def filter_by_date(data):
     recent_data_len = len(recent_data)
     if recent_data_len == 0:
         recent_data = unrecent_data
-    elif recent_data_len < config.urls_limit:
-        recent_data.extend(unrecent_data[: config.urls_limit - len(recent_data)])
+    elif recent_data_len < config.output_urls_limit:
+        recent_data.extend(unrecent_data[: config.output_urls_limit - len(recent_data)])
     return recent_data
 
 
@@ -257,7 +259,7 @@ def get_total_urls(
         else:
             categorized_urls[origin]["all"].append(info)
 
-    urls_limit = config.urls_limit if apply_limit else None
+    urls_limit = config.output_urls_limit if apply_limit else None
 
     def fill_urls(categorized):
         for origin in origin_type_prefer:
@@ -288,11 +290,11 @@ def get_total_urls_from_sorted_data(data):
     """
     Get the total urls with filter by date and duplicate from sorted data
     """
-    if len(data) > config.urls_limit:
+    if len(data) > config.output_urls_limit:
         total_urls = [channel_data["url"] for channel_data, _ in filter_by_date(data)]
     else:
         total_urls = [channel_data["url"] for channel_data, _ in data]
-    return list(dict.fromkeys(total_urls))[: config.urls_limit]
+    return list(dict.fromkeys(total_urls))[: config.output_urls_limit]
 
 
 def check_ipv6_support():
@@ -405,7 +407,10 @@ def merge_objects(*objects, match_key=None):
     return merged_dict
 
 
-def get_public_url(port: int = config.public_port) -> str:
+def get_public_url(port: int | None = None) -> str:
+    if port is None and config.public_url:
+        return config.public_url
+    port = config.public_port if port is None else port
     host = config.public_domain
     scheme = config.public_scheme
     default_port = 80 if scheme == 'http' else 443
@@ -463,6 +468,7 @@ def convert_to_m3u(path=None, first_channel_name=None, data=None, content=None):
             current_group = None
             logo_url = get_logo_url()
             from_fanmingming = "https://raw.githubusercontent.com/fanmingming/live/main/tv" in logo_url
+            data_positions = defaultdict(int)
             for line in file:
                 trimmed_line = line.strip()
                 if trimmed_line != "":
@@ -490,10 +496,10 @@ def convert_to_m3u(path=None, first_channel_name=None, data=None, content=None):
                         item_data = {}
                         if data:
                             item_list = data.get(original_channel_name, [])
-                            for item in item_list:
-                                if item["url"] == channel_link:
-                                    item_data = item
-                                    break
+                            item_position = data_positions[original_channel_name]
+                            if item_position < len(item_list):
+                                item_data = item_list[item_position]
+                                data_positions[original_channel_name] = item_position + 1
                         channel_logo = ""
                         if config.open_subscribe_logo and item_data:
                             channel_logo = item_data.get("tvg_logo") or ""
@@ -529,21 +535,44 @@ def get_result_file_content(path=None, show_content=False, file_type=None):
     """
     Get the content of the result file
     """
+    requested_type = file_type.lower() if isinstance(file_type, str) else file_type
+    if requested_type is None and config.open_m3u_result:
+        requested_type = "m3u"
     result_file = (
-        os.path.splitext(path)[0] + f".{file_type}"
-        if file_type
+        os.path.splitext(path)[0] + f".{requested_type}"
+        if requested_type
         else path
     )
-    if os.path.exists(result_file):
-        if config.open_m3u_result:
-            if file_type == "m3u" or not file_type:
-                result_file = os.path.splitext(path)[0] + ".m3u"
-            if file_type != "txt" and show_content == False:
-                return send_file(resource_path(result_file), as_attachment=True)
+    if os.path.isfile(result_file) and os.path.getsize(result_file) > 0:
+        extension = os.path.splitext(result_file)[1].lower()
+        if extension == ".gz" or (
+                not show_content
+                and requested_type not in {None, "txt"}
+        ):
+            return send_file(resource_path(result_file), as_attachment=True)
         with open(result_file, "r", encoding="utf-8") as file:
             content = file.read()
     else:
-        content = constants.waiting_tip
+        state = read_run_state()
+        status = state.get("status", "never_run")
+        response = make_response(json.dumps({
+            "status": status,
+            "message": t({
+                "never_run": "msg.result_empty_never",
+                "running": "msg.result_empty_running",
+                "completed_empty": "msg.result_empty_after_run",
+                "failed": "msg.result_empty_failed",
+                "cancelled": "msg.result_empty_cancelled",
+            }.get(status, "msg.result_empty")),
+        }, ensure_ascii=False), {
+            "never_run": 404,
+            "running": 202,
+            "completed_empty": 404,
+            "failed": 503,
+            "cancelled": 409,
+        }.get(status, 404))
+        response.mimetype = "application/json"
+        return response
     response = make_response(content)
     response.mimetype = 'text/plain'
     return response
@@ -559,7 +588,11 @@ def remove_duplicates_from_list(data_list, seen, filter_host=False, ipv6_support
             continue
         if not ipv6_support and item["ipv_type"] == "ipv6":
             continue
-        part = item["host"] if filter_host else item["url"]
+        part = (
+            item["host"]
+            if filter_host
+            else stable_result_id(item["url"], item.get("headers"))
+        )
         if part not in seen:
             seen.add(part)
             unique_list.append(item)
@@ -1075,7 +1108,7 @@ def get_urls_len(data) -> int:
     return len(urls)
 
 
-def render_nginx_conf(nginx_conf_template, nginx_conf):
+def render_nginx_conf(nginx_conf_template, nginx_conf, replacements=None):
     """
     Render the nginx conf file
     """
@@ -1084,8 +1117,10 @@ def render_nginx_conf(nginx_conf_template, nginx_conf):
         content = f.read()
 
     content = content.replace('${APP_PORT}', str(config.app_port))
-    content = content.replace('${NGINX_HTTP_PORT}', str(config.nginx_http_port))
+    content = content.replace('${NGINX_HTTP_PORT}', str(config.service_port))
     content = content.replace('${NGINX_RTMP_PORT}', str(config.nginx_rtmp_port))
+    for key, value in (replacements or {}).items():
+        content = content.replace(key, str(value))
 
     with open(nginx_conf, 'w', encoding='utf-8') as f:
         f.write(content)

@@ -3,6 +3,7 @@ import re
 import subprocess
 from time import time
 
+from utils.ffmpeg.executable import resolve_ffmpeg_executable
 from utils.i18n import t
 
 min_measure_time = 1.0
@@ -16,8 +17,11 @@ def check_ffmpeg_installed_status():
     """
     status = False
     try:
+        executable = resolve_ffmpeg_executable()
+        if not executable:
+            return False
         result = subprocess.run(
-            ["ffmpeg", "-version"], stdout=subprocess.PIPE, stderr=subprocess.PIPE
+            [executable, "-version"], stdout=subprocess.PIPE, stderr=subprocess.PIPE
         )
         status = result.returncode == 0
     except FileNotFoundError:
@@ -38,7 +42,11 @@ async def ffmpeg_url(url, headers=None, timeout=10):
     """
     headers_str = "".join(f"{k}: {v}\r\n" for k, v in (headers or {}).items())
 
-    args = ["ffmpeg", "-nostdin", "-threads", "1", "-t", str(timeout)]
+    executable = resolve_ffmpeg_executable()
+    if not executable:
+        return None
+
+    args = [executable, "-nostdin", "-threads", "1", "-t", str(timeout)]
     if headers_str:
         args += ["-headers", headers_str]
     args += ["-http_persistent", "0", "-stats", "-i", url, "-f", "null", "-"]

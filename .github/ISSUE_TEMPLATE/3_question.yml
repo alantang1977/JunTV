@@ -1,0 +1,76 @@
+name: Question | 使用问题
+description: Ask a usage question or clarify whether something is a bug | 提交使用问题，或确认某种情况是否属于 Bug
+title: "[Question]: "
+labels:
+  - question
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        如果你不确定当前情况是否属于 Bug，可以使用此模板。
+
+        如果确认是运行错误，请使用 Bug report；
+        如果是功能改进建议，请使用 Feature request。
+
+  - type: dropdown
+    id: category
+    attributes:
+      label: Question category | 问题类别
+      description: Select the category that best matches your question | 选择最符合问题的类别
+      options:
+        - Installation or deployment | 安装或部署
+        - Configuration | 配置
+        - Usage | 使用方法
+        - Output or data | 输出或数据
+        - Is this a bug? | 是否属于 Bug
+        - Other | 其他
+    validations:
+      required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: Version or commit | 版本或提交
+      description: Provide the version if relevant | 如相关，请填写版本号或 Commit ID
+      placeholder: "例如：v1.2.3"
+    validations:
+      required: false
+
+  - type: input
+    id: environment
+    attributes:
+      label: Environment | 运行环境
+      description: Provide the operating system, Docker version, or deployment environment if relevant | 如相关，请填写操作系统、Docker 版本或部署环境
+      placeholder: "例如：Ubuntu 24.04 x86_64 / Docker"
+    validations:
+      required: false
+
+  - type: textarea
+    id: question
+    attributes:
+      label: Question | 问题描述
+      description: Clearly describe what you want to know or what is unclear | 请清楚描述你想了解的内容
+      placeholder: |
+        请描述：
+        1. 你做了什么
+        2. 看到了什么
+        3. 你期望的结果是什么
+    validations:
+      required: true
+
+  - type: textarea
+    id: attempted
+    attributes:
+      label: What have you tried? | 已尝试的解决方法
+      description: Describe any troubleshooting steps you have already tried | 描述你已经尝试过的排查或解决方法
+    validations:
+      required: false
+
+  - type: textarea
+    id: additional_context
+    attributes:
+      label: Additional context | 补充信息
+      description: Add logs, screenshots, links, or other useful context. Remove sensitive information first. | 可补充日志、截图、链接等信息，请先删除敏感内容
+    validations:
+      required: false

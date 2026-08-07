@@ -1,47 +1,122 @@
 name: Bug report | 报告运行错误或异常
-description: Submit a report about errors or exceptions to help us improve | 提交关于错误或异常的报告以帮助我们改进
+description: Report a reproducible error or unexpected behavior | 提交可复现的错误或异常行为
 title: "[Bug]: "
-labels: [ bug ]
+labels:
+  - bug
+
 body:
+  - type: markdown
+    attributes:
+      value: |
+        感谢你帮助改进项目。
+
+        请不要在 Issue 中粘贴密码、Token、Cookie、私有地址或其他敏感信息。
+        日志和配置内容请先脱敏。
+
+        Thanks for helping improve this project.
+
+        Please remove passwords, tokens, cookies, private URLs, and other sensitive information before submitting logs or configuration.
+
   - type: checkboxes
+    id: precheck
     attributes:
-      label: Don't skip these steps | 不要跳过这些步骤
-      description: Before submitting a issue, please complete the following steps carefully | 提交问题前，请认真完成以下步骤
+      label: Submission checklist | 提交前确认
+      description: Please confirm the following before submitting | 提交前请确认以下内容
       options:
-        - label: I understand that I will be **blocked** if I *intentionally* remove or skip any mandatory\* field | 我明白，如果我“故意”删除或跳过任何强制性的\*字段，我将被**限制**
+        - label: I have searched existing issues and found no duplicate | 我已经搜索过现有 Issue，确认不是重复问题
           required: true
-        - label: I am sure that this is a running error exception problem and will not submit any problems unrelated to this project | 我确定这是运行报错异常问题，不会提交任何与本项目无关的问题
+        - label: This is a runtime error or unexpected behavior, not a feature request | 这是运行错误或异常行为，不是功能建议
           required: true
-        - label: I have searched and double-checked that there are no similar issues that have been created | 我已经通过搜索并仔细检查过没有存在已经创建的类似问题
+        - label: I have removed sensitive information from logs and configuration | 我已经从日志和配置中移除了敏感信息
           required: true
-  - type: checkboxes
-    id: checklist
+
+  - type: dropdown
+    id: usage_context
     attributes:
-      label: Occurrence environment | 触发环境
-      description: |
-        Select the environment that the Bug triggers | 选择该Bug触发的环境:
+      label: Usage context | 使用场景
+      description: Select all environments where the problem occurs | 选择出现问题的运行环境
+      multiple: true
       options:
-        - label: Workflow | 工作流
-          required: false
-        - label: GUI | 软件
-          required: false
-        - label: Docker
-          required: false
-        - label: Command line | 命令行
-          required: false
-  - type: textarea
-    id: description
-    attributes:
-      label: Bug description | 具体描述
-      description: As for the specific description of the Bug, a good description will help to understand and solve it | 对于Bug的具体描述，好的描述有助于理解和解决
-      placeholder: Provide any additional information, any suggested solutions, and as much context and examples as possible | 提供任何附加信息，任何建议的解决方案，以及尽可能多的上下文和示例
+        - GUI | 软件界面
+        - Command line | 命令行
+        - Docker
+        - GitHub Actions / Workflow | GitHub 工作流
+        - API
+        - Other | 其他
     validations:
       required: true
-  - type: textarea
-    id: log
+
+  - type: input
+    id: version
     attributes:
-      label: Error log | 报错日志
-      description: Provide detailed error logs of bugs, copy text or upload files as much as possible, do not take screenshots | 提供Bug的详细报错日志，尽量复制文本或上传文件，不要截图
-      placeholder: Enter error logs or upload files | 输入报错日志或上传文件
+      label: Version or commit | 版本或提交
+      description: Provide the release version, tag, or commit ID | 填写版本号、Tag 或 Commit ID
+      placeholder: "例如：v1.2.3 或 8f31abc"
+    validations:
+      required: true
+
+  - type: input
+    id: operating_system
+    attributes:
+      label: Operating system and architecture | 操作系统与架构
+      description: Include the operating system and CPU architecture if relevant | 如有需要，请填写操作系统和 CPU 架构
+      placeholder: "例如：Ubuntu 24.04 x86_64、Windows 11、macOS ARM64"
+    validations:
+      required: true
+
+  - type: textarea
+    id: what_happened
+    attributes:
+      label: What happened? | 发生了什么
+      description: Describe the actual behavior and the error message | 描述实际行为和错误信息
+      placeholder: 请尽量具体描述发生了什么，以及问题出现的时间和频率
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduction_steps
+    attributes:
+      label: Steps to reproduce | 复现步骤
+      description: List the smallest possible steps to reproduce the problem | 请列出能够复现问题的最简步骤
+      placeholder: |
+        1. ...
+        2. ...
+        3. ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected_behavior
+    attributes:
+      label: Expected behavior | 期望行为
+      description: Describe what you expected to happen | 描述你原本期望发生的结果
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs and error output | 日志与报错信息
+      description: Paste the relevant logs. Do not use screenshots when text can be copied. | 粘贴相关日志；可以复制文本时请不要使用截图
+      placeholder: 粘贴相关日志，并先删除敏感信息
+      render: shell
+    validations:
+      required: false
+
+  - type: textarea
+    id: configuration
+    attributes:
+      label: Relevant configuration | 相关配置
+      description: Paste only the relevant and sanitized configuration | 仅粘贴相关配置，并先删除敏感信息
+      placeholder: 粘贴相关配置，并先删除密码、Token、Cookie 等敏感内容
+      render: ini
+    validations:
+      required: false
+
+  - type: textarea
+    id: additional_context
+    attributes:
+      label: Additional context | 补充信息
+      description: Add screenshots, links, workaround, or any other useful information | 可补充截图、链接、临时解决方法等信息
     validations:
       required: false

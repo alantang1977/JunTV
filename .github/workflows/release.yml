@@ -1,86 +1,147 @@
 name: Release
+
 on:
   workflow_dispatch:
-    branches:
-      - master
+
+permissions:
+  contents: write
 
 jobs:
+  test:
+    uses: ./.github/workflows/tests.yml
+
   build:
-    runs-on: windows-latest
+    needs: test
+    if: github.ref == 'refs/heads/master'
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            platform: Windows
+          - os: macos-latest
+            platform: macOS
+    runs-on: ${{ matrix.os }}
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Set up Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v6
         with:
-          python-version: '3.13'
+          python-version: '3.14'
           update-environment: true
           cache: 'pipenv'
 
-      - name: Install pipenv
-        run: pip3 install --user pipenv
-
       - name: Install dependencies with pipenv
-        run: pipenv --python 3.13 && pipenv install --dev
-
-      - name: Build the application
-        run: pipenv run pyinstaller tkinter_ui/tkinter_ui.spec
-
-      - name: List dist directory contents
-        run: dir dist
-
-      - name: Get info from version.json
-        id: get_info
+        shell: bash
         run: |
-          $json = Get-Content version.json | ConvertFrom-Json
-          echo "version=$($json.version)" >> $env:GITHUB_ENV
-          echo "name=$($json.name)" >> $env:GITHUB_ENV
-        shell: pwsh
+          python -m pip install --upgrade pip pipenv
+          pipenv --python 3.14
+          pipenv install --dev
 
-      - name: Compress dist directory
+      - name: Build the primary GUI application
+        run: pipenv run ui_build
+
+      - name: Read version info
+        shell: bash
         run: |
-          Compress-Archive -Path dist\* -DestinationPath dist\${{ env.name }}-v${{ env.version }}.zip
-        shell: pwsh
+          python - <<'PY'
+          import json
+          import os
 
-      - name: Upload artifact
+          with open("version.json", encoding="utf-8") as file:
+              info = json.load(file)
+          if not info.get("name") or not info.get("version"):
+              raise SystemExit("version.json must contain name and version")
+          with open(os.environ["GITHUB_ENV"], "a", encoding="utf-8") as file:
+              file.write(f"name={info['name']}\nversion={info['version']}\n")
+          PY
+
+      - name: Package Windows application
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $bundle = Join-Path $PWD "dist\$env:name-GUI-v$env:version"
+          if (-not (Test-Path $bundle)) {
+            Write-Error "Windows application directory not found: $bundle"
+            exit 1
+          }
+          New-Item -ItemType Directory -Path artifacts -Force | Out-Null
+          $asset = "$env:name-GUI-Windows-$env:RUNNER_ARCH-v$env:version.zip"
+          Compress-Archive -Path $bundle -DestinationPath (Join-Path $PWD "artifacts\$asset")
+
+      - name: Package macOS application
+        if: runner.os == 'macOS'
+        shell: bash
+        run: |
+          app_path="dist/${name}-GUI-v${version}.app"
+          if [[ ! -d "$app_path" ]]; then
+            echo "macOS application bundle not found: $app_path" >&2
+            exit 1
+          fi
+          mkdir -p artifacts
+          asset="${name}-GUI-macOS-${RUNNER_ARCH}-v${version}.zip"
+          ditto -c -k --sequesterRsrc --keepParent "$app_path" "artifacts/$asset"
+
+      - name: Upload GUI artifact
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ env.name }}-v${{ env.version }}
-          path: dist\${{ env.name }}-v${{ env.version }}.zip
+          name: gui-${{ matrix.platform }}-${{ runner.arch }}
+          path: artifacts/*.zip
+          if-no-files-found: error
 
-      - name: Install jq
-        run: choco install jq
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Download GUI artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: gui-*
+          path: release-assets
+          merge-multiple: true
+
+      - name: Read version info
+        shell: pwsh
+        run: |
+          $json = Get-Content version.json -Raw | ConvertFrom-Json
+          if (-not $json.name -or -not $json.version) {
+            Write-Error 'version.json must contain name and version.'
+            exit 1
+          }
+          Add-Content -Path $env:GITHUB_ENV -Value "name=$($json.name)"
+          Add-Content -Path $env:GITHUB_ENV -Value "version=$($json.version)"
 
       - name: Get changelog
-        id: get_changelog
-        run: |
-          $version = "${{ env.version }}"
-          $changelog = (Get-Content CHANGELOG.md -Raw)
-          $changelog = [regex]::Match($changelog, "(?s)## v$version.*?(?=## v)").Value
-          $changelog = $changelog -replace "(?s)^## v$version.*?\n", ""
-          $changelog = $changelog.Trim()
-          $changelog | jq -Rs '.' | ForEach-Object { echo "changelog=$_"; echo "changelog=$_" >> $env:GITHUB_ENV }
         shell: pwsh
+        run: |
+          $version = $env:version
+          $changelog = Get-Content CHANGELOG.md -Raw
+          $notes = [regex]::Match($changelog, "(?s)## v$version.*?(?=## v|$)").Value
+          $notes = $notes -replace "(?s)^## v$version.*?\n", ''
+          $notes = $notes.Trim()
+          if (-not $notes) {
+            $notes = "Release v$version"
+          }
+          Set-Content -Path release-notes.md -Value $notes -Encoding utf8
 
-      - name: Create Release
-        id: create_release
-        uses: actions/create-release@v1
+      - name: Publish GitHub release
+        shell: pwsh
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          tag_name: ${{ env.version }}
-          release_name: v${{ env.version }}
-          body: ${{ fromJSON(env.changelog) }}
-          draft: false
-          prerelease: false
-
-      - name: Upload Release Asset
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: dist/${{ env.name }}-v${{ env.version }}.zip
-          asset_name: ${{ env.name }}-v${{ env.version }}.zip
-          asset_content_type: application/zip
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          $assets = @(Get-ChildItem release-assets -Filter '*.zip' | Select-Object -ExpandProperty FullName)
+          if ($assets.Count -ne 2) {
+            Write-Error "Expected two desktop assets, found $($assets.Count)."
+            exit 1
+          }
+          $checksums = Join-Path $PWD 'release-assets/SHA256SUMS.txt'
+          $assets | ForEach-Object {
+            $hash = (Get-FileHash -LiteralPath $_ -Algorithm SHA256).Hash.ToLower()
+            "$hash  $(Split-Path $_ -Leaf)"
+          } | Set-Content -Path $checksums -Encoding utf8NoBOM
+          gh release create $env:version $assets $checksums --title "v$env:version" --notes-file release-notes.md --target $env:GITHUB_SHA

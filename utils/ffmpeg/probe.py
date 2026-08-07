@@ -2,6 +2,8 @@ import asyncio
 import json
 import subprocess
 
+from utils.ffmpeg.executable import resolve_ffprobe_executable
+
 
 def _parse_probe_data(data: dict) -> dict | None:
     """
@@ -65,9 +67,12 @@ async def probe_url(url: str, headers: dict = None, timeout: int = 10) -> dict |
     """
     proc = None
     try:
+        executable = resolve_ffprobe_executable()
+        if not executable:
+            return None
         header_str = ''.join(f'{k}: {v}\r\n' for k, v in (headers or {}).items()) if headers else ''
         args = [
-            'ffprobe',
+            executable,
             '-v', 'error',
             '-probesize', '512000',
             '-analyzeduration', '1000000',
@@ -140,9 +145,13 @@ def probe_url_sync(url: str, headers: dict = None, timeout: int = 10) -> dict | 
     Synchronous wrapper around ffprobe to obtain metadata for the first video and audio streams.
     This uses subprocess.run and returns the same dict structure as the async `probe_url`.
     """
+    executable = resolve_ffprobe_executable()
+    if not executable:
+        return None
+
     header_str = ''.join(f'{k}: {v}\r\n' for k, v in (headers or {}).items()) if headers else ''
     args = [
-        'ffprobe',
+        executable,
         '-v', 'error',
         '-show_format',
         '-show_streams',
@@ -190,9 +199,12 @@ async def get_resolution_ffprobe(url: str, headers: dict = None, timeout: int = 
     """
     proc = None
     try:
+        executable = resolve_ffprobe_executable()
+        if not executable:
+            return None
         header_str = ''.join(f'{k}: {v}\r\n' for k, v in (headers or {}).items()) if headers else ''
         args = [
-            'ffprobe',
+            executable,
             '-v', 'error',
             '-select_streams', 'v:0',
             '-show_entries', 'stream=width,height',

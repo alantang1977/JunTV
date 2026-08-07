@@ -11,6 +11,7 @@ from aiohttp import ClientSession, ClientTimeout, TCPConnector
 import m3u8
 
 import utils.constants as constants
+from utils.channel_quality import is_channel_result_valid
 from utils.config import config
 from utils.ffmpeg import probe_url, ffmpeg_url
 from utils.i18n import t
@@ -139,7 +140,9 @@ async def get_speed_with_download(url: str, headers: dict = None, session: Any =
                                     'size': total_size,
                                     'time': total_time,
                                 }
-    except:
+    except asyncio.CancelledError:
+        raise
+    except Exception:
         pass
     finally:
         if created_session:
@@ -169,7 +172,9 @@ async def get_headers(url: str, headers: dict = None, session: Any = None, timeo
         async with _limit(semaphore):
             async with session.head(url, headers=headers, timeout=timeout, allow_redirects=False) as response:
                 res_headers = dict(response.headers)
-    except:
+    except asyncio.CancelledError:
+        raise
+    except Exception:
         pass
     finally:
         if created_session:
@@ -198,7 +203,9 @@ async def get_url_content(url: str, headers: dict = None, session: Any = None,
                     content = payload.decode(response.charset or "utf-8", errors="replace")
                 else:
                     raise Exception("Invalid response")
-    except:
+    except asyncio.CancelledError:
+        raise
+    except Exception:
         pass
     finally:
         if created_session:
@@ -342,26 +349,29 @@ async def get_result(url: str, headers: dict = None, resolution: str = None,
                     info['speed'] = total_size / total_time / 1024 / 1024 if total_time > 0 else 0
                     delays = [result['delay'] for result in valid_results if result.get('delay', -1) >= 0]
                     info['delay'] = int(sum(delays) / len(delays)) if delays else -1
-    except:
+    except asyncio.CancelledError:
+        raise
+    except Exception:
         pass
-    finally:
-        probe_speed_threshold = min(
-            [min_speed_value, *resolution_speed_map.values()],
-            default=min_speed_value,
-        )
-        should_probe = open_supply or not open_filter_speed or (info.get('speed') or 0) >= probe_speed_threshold
-        if (filter_resolution and should_probe and not location
-                and not info.get('resolution') and info.get('delay') != -1):
-            try:
-                async with _limit(probe_semaphore):
-                    probed = await probe_url(url, headers, timeout=timeout)
-                if probed:
-                    info['resolution'] = probed.get('resolution')
-                    info['fps'] = probed.get('fps')
-                    info['video_codec'] = probed.get('video_codec')
-                    info['audio_codec'] = probed.get('audio_codec')
-            except Exception:
-                pass
+    probe_speed_threshold = min(
+        [min_speed_value, *resolution_speed_map.values()],
+        default=min_speed_value,
+    )
+    should_probe = open_supply or not open_filter_speed or (info.get('speed') or 0) >= probe_speed_threshold
+    if (filter_resolution and should_probe and not location
+            and not info.get('resolution') and info.get('delay') != -1):
+        try:
+            async with _limit(probe_semaphore):
+                probed = await probe_url(url, headers, timeout=timeout)
+            if probed:
+                info['resolution'] = probed.get('resolution')
+                info['fps'] = probed.get('fps')
+                info['video_codec'] = probed.get('video_codec')
+                info['audio_codec'] = probed.get('audio_codec')
+        except asyncio.CancelledError:
+            raise
+        except Exception:
+            pass
     return info
 
 
@@ -557,6 +567,12 @@ def get_speed_result(key: str) -> TestResult:
         return {'speed': 0, 'delay': -1, 'resolution': None}
 
 
+def invalidate_speed_cache(data: dict) -> None:
+    for key in {data.get("url"), data.get("host")}:
+        if key:
+            cache.pop(key, None)
+
+
 async def get_speed(data, headers=None, ipv6_proxy=None, filter_resolution=open_filter_resolution,
                     timeout=speed_test_timeout, logger=None, callback=None, session: Any = None,
                     http_semaphore=None, probe_semaphore=None) -> TestResult:
@@ -603,16 +619,23 @@ async def get_speed(data, headers=None, ipv6_proxy=None, filter_resolution=open_
                 ))
             if cache_key:
                 cache.setdefault(cache_key, []).append(result)
-    except Exception:
-        pass
+    except Exception as exc:
+        result["test_status"] = "request_error"
+        result["error_type"] = type(exc).__name__
     finally:
+        if "test_status" not in result:
+            result["test_status"] = (
+                "measured"
+                if result.get("delay") not in {-1, None} and (result.get("speed") or 0) > 0
+                else "unreachable"
+            )
         if callback:
             callback()
         if logger:
             origin = data.get('origin')
             origin_name = t(f"name.{origin}") if origin else origin
             logger.info(
-                f"ID: {data.get('id')}, {t('name.name')}: {data.get('name')}, {t('pbar.url')}: {data.get('url')}, {t('name.from')}: {origin_name}, {t('name.ipv_type')}: {data.get('ipv_type')}, {t('name.location')}: {data.get('location')}, {t('name.isp')}: {data.get('isp')}, {t('name.delay')}: {result.get('delay') or -1} ms, {t('name.speed')}: {result.get('speed') or 0:.2f} M/s, {t('name.resolution')}: {result.get('resolution')}, {t('name.fps')}: {result.get('fps') or t('name.unknown')}, {t('name.video_codec')}: {result.get('video_codec') or t('name.unknown')}, {t('name.audio_codec')}: {result.get('audio_codec') or t('name.unknown')}"
+                f"ID: {data.get('id')}, {t('name.name')}: {data.get('name')}, {t('pbar.url')}: {data.get('url')}, {t('name.from')}: {origin_name}, {t('name.ipv_type')}: {data.get('ipv_type')}, {t('name.location')}: {data.get('location')}, {t('name.isp')}: {data.get('isp')}, {t('name.delay')}: {result.get('delay') or -1} ms, {t('name.speed')}: {result.get('speed') or 0:.2f} MiB/s, {t('name.resolution')}: {result.get('resolution')}, {t('name.fps')}: {result.get('fps') or t('name.unknown')}, {t('name.video_codec')}: {result.get('video_codec') or t('name.unknown')}, {t('name.audio_codec')}: {result.get('audio_codec') or t('name.unknown')}"
             )
     return result
 
@@ -634,20 +657,20 @@ def get_sort_result(
     for result in results:
         if not ipv6_support and result["ipv_type"] == "ipv6":
             result.update(default_ipv6_result)
-        result_speed, result_delay, resolution = (
-            result.get("speed") or 0,
-            result.get("delay"),
-            result.get("resolution")
-        )
-        if result_delay == -1:
+            total_result.append(result)
             continue
-        if not supply:
-            if filter_speed and result_speed < resolution_speed_map.get(resolution, min_speed):
-                continue
-            if filter_resolution and resolution:
-                resolution_value = get_resolution_value(resolution)
-                if resolution_value < min_resolution or resolution_value > max_resolution:
-                    continue
+        if not is_channel_result_valid(
+                result,
+                retain_special=True,
+                supply=supply,
+                filter_speed=filter_speed,
+                min_speed=min_speed,
+                resolution_speed_map=resolution_speed_map,
+                filter_resolution=filter_resolution,
+                min_resolution=min_resolution,
+                max_resolution=max_resolution,
+        ):
+            continue
         total_result.append(result)
 
     def sort_key(item):

@@ -1,5 +1,140 @@
 # 更新日志（Changelog）
 
+## v3.0.0
+
+### 2026/8/7
+
+> [!IMPORTANT]
+> 1. 本版本运行环境升级至 Python 3.14。
+> 2. 新增 PySide6 桌面版，适用于 Windows 和 macOS。
+> 3. 旧版 Tkinter 界面已弃用，目前仅临时保留兼容。
+> 4. 部分配置项和默认值发生变化，升级后请检查 `config/config.ini`。
+
+### 🌟 新桌面版
+
+- 提供更新仪表盘，可查看更新进度、运行状态和结果统计。
+- 提供频道管理，可进行分类、搜索、播放、重新测速和批量操作。
+- 提供数据源管理，可维护订阅源、EPG、本地源、白名单、黑名单和频道别名。
+- 支持频道模板、播放源和诊断信息的导入导出。
+- 支持批量导入本地源文件，并在写入前预览、筛选重复项和无效项。
+- 支持播放截图预览和批量刷新，可选在更新过程中自动获取截图。
+- 支持在浏览器或配置的外部播放器中打开频道。
+- 提供 RTMP 推流监控和控制。
+- 提供任务历史、运行日志、日志导出和更新日志查看。
+- 支持中英文界面和系统托盘运行。
+
+### 🚀 新增功能
+
+1. 新增 `performance_mode`，支持自动、节能、均衡和快速模式。
+2. 新增 `speed_test_mode`，支持快速测速、全量测速和手动测速。
+3. 新增 `output_urls_limit`，用于控制每个频道最终导出的接口数量。
+4. 新增快速测速目标配置，可在达到目标结果后提前结束该频道的测速。
+5. 新增播放截图配置：`open_stream_screenshot`、`stream_screenshot_timeout` 和 `stream_screenshot_width`。
+6. 新增 `service_port` 和 `public_url`，用于统一服务端口和公网地址配置。
+7. 新增运行状态持久化及状态 API，便于外部调用方判断更新是否完成、失败或取消。
+8. 日志接口支持 JSON Lines 格式。
+9. 改进 M3U、TXT 和压缩结果文件的独立访问与下载。
+
+### 🐛 修复
+
+1. 修复临时测速失败导致已有频道结果数量减少的问题。
+2. 修复 EPG 节目时间在处理过程中丢失时区的问题。
+3. 修复部分 M3U8 地址无法正常进行 IPv6 测速的问题。
+4. 修复部分频道结果质量判断不一致的问题。
+5. 修复部分结果文件无法独立下载的问题。
+6. 修复重复启动服务时产生重复日志的问题。
+7. 修复 RTMP 推流资源未及时清理的问题。
+8. 修复受限 Docker 环境中的 Nginx PID 文件和文件写入问题。
+
+### ⚙️ 配置变更
+
+- Python 最低版本升级至 3.14。
+- `pipenv run ui` 启动新的 PySide6 桌面版。
+- 旧版界面暂时通过 `pipenv run legacy_ui` 启动。
+- `urls_limit` 保留兼容，新的配置建议使用 `output_urls_limit`。
+- 新增测速模式、快速测速目标和播放截图相关配置。
+- 新增 `service_port` 和 `public_url`。
+- `open_subscribe_epg`、`open_subscribe_logo`、`open_headers` 默认开启。
+- `open_auto_disable_source` 默认关闭。
+- `speed_test_limit = 0` 表示由性能模式自动决定测速并发。
+
+### 🆙 升级建议
+
+1. 使用 Python 3.14 重新创建 Pipenv 环境。
+2. 对照新版配置文件合并新增配置项。
+3. 检查 EPG、台标、请求头和自动停用源等默认开关。
+4. Docker 用户检查端口映射及公网地址配置。
+5. 使用播放截图功能时，确认系统已安装 FFmpeg。
+
+<details>
+  <summary>English</summary>
+
+### 2026/8/7
+
+> [!IMPORTANT]
+> 1. Python 3.14 is required.
+> 2. A new PySide6 desktop application is available for Windows and macOS.
+> 3. The legacy Tkinter interface is deprecated and retained temporarily for compatibility.
+> 4. Some configuration defaults and options have changed. Review `config/config.ini` after upgrading.
+
+### 🌟 New Desktop Application
+
+- Dashboard with update progress, runtime status, and result statistics.
+- Channel management with categories, search, playback, retesting, and batch actions.
+- Source management for subscriptions, EPG, local sources, whitelists, blacklists, and aliases.
+- Import and export channel templates, playback sources, and diagnostic data.
+- Batch import local source files with preview, duplicate detection, and invalid-record filtering.
+- Playback screenshot preview and batch refresh, with optional automatic capture during updates.
+- Open channels in a browser or a configured external player.
+- RTMP streaming monitoring and controls.
+- Task history, runtime logs, log export, and changelog viewing.
+- Chinese and English interfaces and system-tray operation.
+
+### 🚀 New Features
+
+1. Added `performance_mode` with automatic, power-saving, balanced, and fast modes.
+2. Added `speed_test_mode` with quick, full, and manual modes.
+3. Added `output_urls_limit` to control the final number of exported interfaces per channel.
+4. Added quick-test target settings to stop testing a channel after enough valid results are found.
+5. Added playback screenshot settings: `open_stream_screenshot`, `stream_screenshot_timeout`, and `stream_screenshot_width`.
+6. Added `service_port` and `public_url` for unified service and public-address configuration.
+7. Added persisted update states and status APIs for completed, failed, and cancelled runs.
+8. Log endpoints now support JSON Lines output.
+9. Improved independent access to M3U, TXT, and compressed result files.
+
+### 🐛 Fixes
+
+1. Fixed existing channel results shrinking after transient speed-test failures.
+2. Fixed time zones being lost from EPG programme times.
+3. Fixed some M3U8 addresses failing IPv6 speed tests.
+4. Fixed inconsistent channel-result quality checks.
+5. Fixed independent downloads for some result files.
+6. Fixed duplicate service-startup log entries.
+7. Fixed RTMP resources not being cleaned up promptly.
+8. Fixed Nginx PID-file and file-write issues in restricted Docker environments.
+
+### ⚙️ Configuration Changes
+
+- Python 3.14 is now the minimum supported version.
+- `pipenv run ui` starts the new PySide6 desktop application.
+- The legacy interface is temporarily available through `pipenv run legacy_ui`.
+- `urls_limit` remains compatible; new configurations should use `output_urls_limit`.
+- Added speed-test mode, quick-test target, and playback screenshot settings.
+- Added `service_port` and `public_url`.
+- `open_subscribe_epg`, `open_subscribe_logo`, and `open_headers` are enabled by default.
+- `open_auto_disable_source` is disabled by default.
+- `speed_test_limit = 0` lets the performance mode choose concurrency automatically.
+
+### 🆙 Upgrade Notes
+
+1. Recreate the Pipenv environment with Python 3.14.
+2. Merge the new options into the local configuration.
+3. Review the EPG, logo, request-header, and automatic-source-disable defaults.
+4. Check Docker port mappings and public-address settings.
+5. Install FFmpeg if playback screenshots are enabled.
+
+</details>
+
 ## v2.0.8
 
 ### 2026/7/7
