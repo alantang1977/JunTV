@@ -1,0 +1,49 @@
+name: 'Update schedule'
+
+on:
+  # 保留手动触发按钮，可随时点击运行
+  workflow_dispatch:
+  # 定时自动更新：每周一、周四 UTC 00:00 执行（对应北京时间 08:00）
+  schedule:
+    - cron: '0 0 * * 1,4'
+
+# 授予工作流仓库写入权限，确保能推送更新结果
+permissions:
+  contents: write
+
+jobs:
+  push:
+    runs-on: ${{ matrix.operating-system }}
+    strategy:
+      matrix:
+        operating-system: [ 'ubuntu-latest' ]
+    steps:
+      - name: Set branch name
+        id: vars
+        run: echo "BRANCH_NAME=${{ github.repository_owner == 'Guovin' && 'gd' || 'main' }}" >> $GITHUB_ENV
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ env.BRANCH_NAME }}
+      - name: Run with setup-python 3.14
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.14'
+          update-environment: true
+          cache: 'pipenv'
+      - name: Install FFmpeg
+        run: sudo apt-get update && sudo apt-get install -y ffmpeg
+      - name: Install pipenv
+        run: pip3 install --user pipenv
+      - name: Install dependencies
+        run: pipenv --python 3.14 && pipenv install --deploy
+      - name: Update
+        run: pipenv run dev
+      - name: Commit and push if changed
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git add .
+          if ! git diff --staged --quiet; then
+            git commit -m "Github Action Auto Updated"
+            git push
+          fi
