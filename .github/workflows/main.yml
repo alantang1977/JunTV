@@ -1,16 +1,15 @@
 name: 'Update schedule'
 
-# ⚠️注意：请不要在 fork 的仓库中添加 `on: schedule` 定时任务（cron）。
-# Forks 可能被大量复制并触发定时执行，当前 GitHub Actions 资源使用已接近上限，
-# 大量 fork 的定时任务可能导致工作流被禁用。若需要定时执行，请使用其它部署方式。
-#
-# ⚠️NOTICE: Do NOT add `on: schedule` cron triggers in forked repositories.
-# Forks may multiply scheduled runs and GitHub Actions resource usage is near limits.
-# Many scheduled workflows from forks can cause workflows to be disabled.
-# If scheduled execution is required, use other deployment methods.
-
 on:
+  # 保留手动触发按钮，可随时点击运行
   workflow_dispatch:
+  # 定时自动更新：每周一、周四 UTC 00:00 执行（对应北京时间 08:00）
+  schedule:
+    - cron: '0 0 * * 1,4'
+
+# 授予工作流仓库写入权限，确保能推送更新结果
+permissions:
+  contents: write
 
 jobs:
   push:
@@ -21,7 +20,7 @@ jobs:
     steps:
       - name: Set branch name
         id: vars
-        run: echo "BRANCH_NAME=${{ github.repository_owner == 'Guovin' && 'gd' || 'master' }}" >> $GITHUB_ENV
+        run: echo "BRANCH_NAME=${{ github.repository_owner == 'Guovin' && 'gd' || 'main' }}" >> $GITHUB_ENV
       - uses: actions/checkout@v6
         with:
           ref: ${{ env.BRANCH_NAME }}
@@ -35,7 +34,7 @@ jobs:
         run: sudo apt-get update && sudo apt-get install -y ffmpeg
       - name: Install pipenv
         run: pip3 install --user pipenv
-      - name: Install dependecies
+      - name: Install dependencies
         run: pipenv --python 3.14 && pipenv install --deploy
       - name: Update
         run: pipenv run dev
@@ -46,5 +45,5 @@ jobs:
           git add .
           if ! git diff --staged --quiet; then
             git commit -m "Github Action Auto Updated"
-            git push --force
+            git push
           fi
