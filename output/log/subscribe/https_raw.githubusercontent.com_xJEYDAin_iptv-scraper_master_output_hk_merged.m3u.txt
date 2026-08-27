@@ -2,8 +2,8 @@
 #EXTVLCOPT:network-caching=1000
 #EXTVLCOPT:live-cache=1000
 #EXTVLCOPT:ttl=5
-#PLAYLIST:HK & TW IPTV 2026-08-23
-# Total: 161 channels, 10 categories, min speed: 30 KB/s
+#PLAYLIST:HK & TW IPTV 2026-08-26
+# Total: 159 channels, 10 categories, min speed: 30 KB/s
 
 #EXTGRP:📡 卫视频道 (10)
 # speed: N/A
@@ -327,7 +327,7 @@ https://hoytv-live-stream.hoy.tv/ch76/index-fhd.m3u8
 #EXTINF:-1 tvg-name="HOY TV[Geo-blocked]" tvg-logo="https://epg.112114.xyz/logo/HOY%20TV.png" group-title="📺 HOY TV",HOY TV[Geo-blocked]
 https://hoytv-live-stream.hoy.tv/ch77/index.m3u8
 
-#EXTGRP:📺 Now TV (15)
+#EXTGRP:📺 Now TV (13)
 # speed: N/A
 #EXTINF:-1 tvg-name="Now TVNEWS" tvg-logo="https://epg.112114.xyz/logo/NOW%20TV.png" group-title="📺 Now TV",Now TVNEWS
 http://cdn.163189.xyz/163189/now
@@ -367,12 +367,6 @@ https://videostream.jpbgdigital.com/NOWTV.m3u8
 # speed: N/A
 #EXTINF:-1 tvg-name="RightNowTV" tvg-logo="https://epg.112114.xyz/logo/NOW%20TV.png" group-title="📺 Now TV",RightNowTV
 https://a-cdn.klowdtv.com/live2/rightnowtv_720p/playlist.m3u8
-# speed: N/A
-#EXTINF:-1 tvg-name="Now TV星影臺" tvg-logo="https://epg.112114.xyz/logo/NOW%20TV.png" group-title="📺 Now TV",Now TV星影臺
-https://t.freetv.fun/live/nowxing-ying.ts
-# speed: N/A
-#EXTINF:-1 tvg-name="Now TV爆谷台" tvg-logo="https://epg.112114.xyz/logo/NOW%20TV.png" group-title="📺 Now TV",Now TV爆谷台
-https://t.freetv.fun/live/nowbao-gu.ts
 
 #EXTGRP:📺 有线电视 (1)
 # speed: N/A
