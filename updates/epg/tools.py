@@ -4,9 +4,17 @@ import shutil
 import xml.etree.ElementTree as ET
 from datetime import datetime
 
+import pytz
+
+from utils.config import config
+
 
 def write_to_xml(programmes, path):
-    root = ET.Element('tv', attrib={'date': datetime.now().strftime("%Y%m%d%H%M%S +0800")})
+    timezone = pytz.timezone(config.time_zone)
+    root = ET.Element(
+        'tv',
+        attrib={'date': datetime.now(timezone).strftime("%Y%m%d%H%M%S %z")},
+    )
     for channel_id, data in programmes.items():
         channel_elem = ET.SubElement(root, 'channel', attrib={"id": channel_id})
         display_name_elem = ET.SubElement(channel_elem, 'display-name', attrib={"lang": "zh"})

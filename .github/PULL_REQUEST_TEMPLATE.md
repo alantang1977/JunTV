@@ -1,41 +1,102 @@
+> [!WARNING]
+> **请先确认你确实要提交代码贡献。**
+>
+> 如果你的目的是更新自己 Fork 的代码，请不要创建 Pull Request。
+> 请返回自己的仓库主页，使用 `Sync fork` → `Update branch`。
+> 如果出现同步冲突，请按照教程选择 `Discard commits`。
+>
+> Pull Request 仅用于向主仓库提交经过确认的代码、文档、测试或 CI 修改。
+> 如果只是修改个人配置、提交运行结果或同步代码，请关闭当前页面。
+>
+> **Please confirm that you intentionally want to submit a code contribution.**
+> If you only want to update your fork, use `Sync fork` → `Update branch` in your own repository.
+> Pull Requests are for intentional code, documentation, test, or CI contributions to the upstream repository.
+
 <!--
-！！！⚠️ 警告⚠️ ！！！更新代码不要使用该功能！！！非维护人员请离开该页面！！！
-如果你是因为更新代码或合并代码产生冲突来到该页面，一定不要点击下方绿色创建按钮！请参考：https://github.com/Guovin/iptv-api/blob/master/docs/tutorial.md，里面有具体解决方法。
-箭头指向的base repository一定不能是主仓库Guovin/iptv-api！否则会将你的代码提交合并到主仓库，导致产生无效请求以及垃圾邮件！
-切勿提交无效的请求（包括个人配置或更新结果等），无效的请求会被直接关闭，累计多次将被加入黑名单，无法使用该项目！
+Do not remove the marker on the contribution confirmation checkbox.
+It is used to distinguish intentional contributions from accidental update PRs.
+不要删除贡献确认复选框中的标记，自动校验会使用它识别误操作 PR。
 -->
 
-<!-- PULL REQUEST TEMPLATE -->
-<!-- (Update "[ ]" to "[x]" to check a box) -->
+## Contribution confirmation | 贡献确认
 
-**What kind of change does this PR introduce?** (check at least one)
+- [ ] I intentionally want to submit code changes to Guovin/iptv-api for review | 我确认这是一次有意提交给主仓库审核的代码贡献 <!-- pr-contribution-confirmed -->
 
-- [ ] Bugfix
-- [ ] Feature
-- [ ] Code style update
-- [ ] Refactor
-- [ ] Build-related changes
-- [ ] Release
-- [ ] Other, please describe:
+## Summary | 修改概述
 
-**Which environment is this PR for?** (check at least one)
+<!-- 简要说明本 PR 修改了什么，以及为什么需要修改。 -->
 
-- [ ] Workflow
-- [ ] GUI
-- [ ] Docker
-- [ ] Command line
-- [ ] Other, please describe:
+## Related issue | 关联 Issue
 
-**Does this PR introduce a breaking change?** (check one)
+<!-- 例如：Fixes #123、Closes #456；如果没有关联 Issue，请填写 N/A。 -->
 
-- [ ] Yes
-- [ ] No
+## Change type | 变更类型
 
-If yes, please describe the impact and migration path for existing applications:
+- [ ] Bug fix | Bug 修复
+- [ ] Feature | 功能新增或改进
+- [ ] Documentation | 文档
+- [ ] Test | 测试
+- [ ] Refactor | 重构
+- [ ] Performance | 性能优化
+- [ ] Build / CI | 构建或 CI
+- [ ] Chore | 其他维护性修改
+- [ ] Other | 其他：
 
-If adding a **new feature**, the PR's description includes:
+## Scope | 影响范围
 
-- [ ] A convincing reason for adding this feature (to avoid wasting your time, it's best to open a suggestion issue
-  first and wait for approval before working on it)
+- [ ] Core / API | 核心功能或 API
+- [ ] GUI | 软件界面
+- [ ] Command line | 命令行
+- [ ] Docker / Deployment | Docker 或部署
+- [ ] GitHub Actions / Workflow | GitHub 工作流
+- [ ] Documentation | 文档
+- [ ] Tests | 测试
+- [ ] Other | 其他：
 
-**Other information:**
+## Implementation details | 实现说明
+
+<!-- 说明核心实现方式、重要设计决策，以及可能影响维护的内容。 -->
+
+## Testing | 测试情况
+
+### Automated tests | 自动化测试
+
+- [ ] 已新增或更新相关测试（如适用）
+- [ ] 已运行相关测试
+- [ ] 相关测试已通过
+
+测试命令：
+
+```text
+# 例如：
+pipenv run python -m unittest discover -s tests -v
+```
+
+### Manual verification | 手动验证
+
+<!-- 如果涉及 GUI、Docker、Workflow 或其他运行行为，请说明验证方式；不适用时填写 N/A。 -->
+
+## User-facing changes | 用户可见变化
+
+<!-- 描述用户能够看到的变化；如果没有，请填写 N/A。 -->
+
+截图或录屏（如适用）：
+
+## Breaking changes | 破坏性变更
+
+- [ ] No breaking changes | 没有破坏性变更
+- [ ] Yes, this is a breaking change | 存在破坏性变更
+
+如果存在破坏性变更，请说明：
+
+- 受影响的功能：
+- 旧用法：
+- 新用法：
+- 迁移步骤：
+
+## Checklist | 提交前检查
+
+- [ ] 没有提交个人配置、生成结果、运行日志或敏感信息
+- [ ] 已更新必要的文档
+- [ ] PR 只包含与本次修改相关的内容
+- [ ] 已填写所有适用的部分；不适用的部分已填写 N/A

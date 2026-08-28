@@ -1,0 +1,59 @@
+${NGINX_RTMP_MODULE}
+worker_processes 1;
+pid logs/nginx.pid;
+error_log logs/error.log error;
+
+events {
+    worker_connections 1024;
+}
+
+rtmp {
+    server {
+        listen ${NGINX_RTMP_PORT};
+
+        application hls {
+            live on;
+            hls on;
+            hls_path temp/hls;
+            hls_fragment 3s;
+            hls_playlist_length 60s;
+            on_done http://127.0.0.1:${APP_PORT}/on_done;
+        }
+    }
+}
+
+http {
+    server {
+        listen ${NGINX_HTTP_PORT};
+
+        location / {
+            proxy_pass http://127.0.0.1:${APP_PORT};
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto $scheme;
+            add_header Access-Control-Allow-Origin *;
+        }
+
+        location /stat {
+            rtmp_stat all;
+        }
+
+        location ~ ^/hls/(.+)\.ts$ {
+            root temp;
+            types {
+                video/mp2t ts;
+            }
+            expires -1;
+            add_header Access-Control-Allow-Origin *;
+        }
+
+        location ~ ^/hls/(.+)\.m3u8$ {
+            proxy_pass http://127.0.0.1:${APP_PORT}/hls_proxy/$1;
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            add_header Access-Control-Allow-Origin *;
+        }
+    }
+}

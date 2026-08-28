@@ -45,6 +45,7 @@ class TkinterUI:
         self.epg_ui = EpgUI()
         self.update_source = UpdateSource()
         self.update_running = False
+        self.loop = None
         self.result_url = None
         self.now = None
 
@@ -119,6 +120,7 @@ class TkinterUI:
             self.update_source.stop()
 
         loop = asyncio.new_event_loop()
+        self.loop = loop
 
         def run_loop():
             asyncio.set_event_loop(loop)
@@ -128,9 +130,12 @@ class TkinterUI:
         self.thread.start()
 
     def stop(self):
-        asyncio.get_event_loop().stop()
+        if self.loop and self.loop.is_running():
+            self.loop.call_soon_threadsafe(self.loop.stop)
 
     def update_progress(self, title, progress, finished=False, url=None, now=None):
+        if isinstance(url, dict):
+            url = url.get("service_url")
         self.progress_bar["value"] = progress
         self.now = now
         if finished and now:

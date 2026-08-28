@@ -1,13 +1,61 @@
 import asyncio
 import copy
 from collections import defaultdict
-from logging import INFO
 from typing import Any, Dict, Optional, Set, Tuple
 
 import utils.constants as constants
-from utils.channel import sort_channel_result, generate_channel_statistic, write_channel_to_file, retain_origin
+from utils.artifacts import ArtifactWriter
+from utils.channel import (
+    build_channel_statistic,
+    format_channel_statistic,
+    retain_origin,
+    sort_channel_result,
+    write_channel_to_file,
+)
+from utils.channel_repository import sync_channel_snapshot
 from utils.config import config
-from utils.tools import get_logger, close_logger_handlers
+from utils.frozen import is_url_frozen
+from utils.identity import stable_result_id
+from utils.i18n import t
+
+
+def _preserve_unmeasured_history(test_copy, previous_result, base_data):
+    """Keep last-known-good results that quick mode did not retest.
+
+    A quick run may stop after reaching its valid-result target. In that case
+    an old result must not disappear merely because it was not included in
+    this run's measured set. Explicitly tested failures are excluded by their
+    stable result id, and frozen URLs are still allowed to age out normally.
+    """
+    preserved = copy.deepcopy(test_copy or {})
+
+    for category, channels in (base_data or {}).items():
+        for name, candidates in channels.items():
+            current = preserved.setdefault(category, {}).setdefault(name, [])
+            candidate_ids = {
+                stable_result_id(item.get("url", ""), item.get("headers"))
+                for item in candidates
+                if isinstance(item, dict) and item.get("url")
+            }
+            seen = {
+                stable_result_id(item.get("url", ""), item.get("headers"))
+                for item in current
+                if isinstance(item, dict) and item.get("url")
+            }
+            for item in (previous_result or {}).get(category, {}).get(name, []):
+                if not isinstance(item, dict) or not item.get("url"):
+                    continue
+                result_id = stable_result_id(item["url"], item.get("headers"))
+                if (
+                    result_id not in candidate_ids
+                    or result_id in seen
+                    or is_url_frozen(item["url"])
+                ):
+                    continue
+                current.append(copy.deepcopy(item))
+                seen.add(result_id)
+
+    return preserved
 
 
 class ResultAggregator:
@@ -21,12 +69,15 @@ class ResultAggregator:
             first_channel_name: Optional[str] = None,
             ipv6_support: bool = True,
             write_interval: float = 5.0,
-            min_items_before_flush: int = config.urls_limit,
+            min_items_before_flush: int = config.output_urls_limit,
             flush_debounce: Optional[float] = None,
             stat_logger=None,
             result: Optional[Dict[str, Dict[str, list]]] = None,
+            channel_catalog: Optional[Dict[str, Dict[str, list]]] = None,
+            reporter=None,
     ):
         self.base_data = base_data
+        self.channel_catalog = channel_catalog or {}
         self.result = sort_channel_result(
             base_data,
             result=result,
@@ -37,11 +88,18 @@ class ResultAggregator:
         self._dirty_count = 0
         self._stopped = True
         self._task: Optional[asyncio.Task] = None
+        self._loop: Optional[asyncio.AbstractEventLoop] = None
         self.realtime_write = config.open_realtime_write
         self.write_interval = write_interval
         self.first_channel_name = first_channel_name
         self.ipv6_support = ipv6_support
-        self.stat_logger = stat_logger or get_logger(constants.statistic_log_path, level=INFO, init=True)
+        self.reporter = reporter
+        self.stat_writer = ArtifactWriter(
+            constants.statistic_log_path,
+            constants.statistic_jsonl_path,
+            format_channel_statistic,
+            limit=10000,
+        )
         self.is_last = False
         self._lock = asyncio.Lock()
         self._write_lock = asyncio.Lock()
@@ -61,11 +119,7 @@ class ResultAggregator:
         self._pending_channels.add((cate, name))
 
         if is_channel_last:
-            try:
-                self._finished_channels.add((cate, name))
-                generate_channel_statistic(self.stat_logger, cate, name, self.test_results[cate][name])
-            except Exception:
-                pass
+            self._finished_channels.add((cate, name))
 
         if is_valid and self.realtime_write:
             self._dirty = True
@@ -77,11 +131,8 @@ class ResultAggregator:
                 asyncio.get_running_loop()
                 self._flush_event.set()
             except RuntimeError:
-                try:
-                    loop = asyncio.get_event_loop()
-                    loop.call_soon_threadsafe(self._flush_event.set)
-                except Exception:
-                    pass
+                if self._loop and self._loop.is_running():
+                    self._loop.call_soon_threadsafe(self._flush_event.set)
 
     async def _atomic_write_sorted_view(
             self,
@@ -120,15 +171,19 @@ class ResultAggregator:
 
                 if (cate, name) not in finished:
                     prev_sorted = self.result.get(cate, {}).get(name, [])
-                    seen = {it.get("url") for it in partial_result[cate][name] if
-                            isinstance(it, dict) and it.get("url")}
+                    seen = {
+                        stable_result_id(it.get("url", ""), it.get("headers"))
+                        for it in partial_result[cate][name]
+                        if isinstance(it, dict) and it.get("url")
+                    }
                     for item in prev_sorted:
                         if not isinstance(item, dict):
                             continue
                         url = item.get("url")
-                        if url and url not in seen and item.get("origin") not in retain_origin:
+                        result_id = stable_result_id(url or "", item.get("headers"))
+                        if url and result_id not in seen and item.get("origin") not in retain_origin:
                             partial_result[cate][name].append(item)
-                            seen.add(url)
+                            seen.add(result_id)
             try:
                 if len(affected) == 1:
                     cate_single, name_single = next(iter(affected))
@@ -145,15 +200,34 @@ class ResultAggregator:
                         partial_base, result=partial_result, filter_host=speed_test_filter_host,
                         ipv6_support=self.ipv6_support
                     )
-            except Exception:
+            except Exception as exc:
+                if self.reporter:
+                    self.reporter.error(
+                        "result.sort_failed",
+                        t("msg.error_name_info").format(name="result sort", info=exc),
+                        phase="output",
+                        error_type=type(exc).__name__,
+                    )
                 new_sorted = defaultdict(lambda: defaultdict(list))
         else:
             try:
+                test_copy = _preserve_unmeasured_history(
+                    test_copy,
+                    self.result,
+                    self.base_data,
+                )
                 new_sorted = sort_channel_result(
                     self.base_data, result=test_copy, filter_host=speed_test_filter_host,
                     ipv6_support=self.ipv6_support
                 )
-            except Exception:
+            except Exception as exc:
+                if self.reporter:
+                    self.reporter.error(
+                        "result.sort_failed",
+                        t("msg.error_name_info").format(name="result sort", info=exc),
+                        phase="output",
+                        error_type=type(exc).__name__,
+                    )
                 new_sorted = defaultdict(lambda: defaultdict(list))
 
         merged = defaultdict(lambda: defaultdict(list))
@@ -178,9 +252,26 @@ class ResultAggregator:
             self.first_channel_name,
             True,
             is_last,
+            self.reporter,
         )
 
         self.result = merged
+        snapshot_tests = copy.deepcopy(self.test_results)
+        snapshot_base = copy.deepcopy(self.channel_catalog)
+        for category, channel_map in self.base_data.items():
+            target = snapshot_base.setdefault(category, {})
+            for name, items in channel_map.items():
+                target[name] = copy.deepcopy(items)
+        snapshot_selected = copy.deepcopy(self.result)
+        await loop.run_in_executor(
+            None,
+            sync_channel_snapshot,
+            constants.channel_results_path,
+            snapshot_base,
+            snapshot_tests,
+            snapshot_selected,
+            self.reporter.run_id if self.reporter else None,
+        )
 
     async def flush_once(self, force: bool = False) -> None:
         """
@@ -220,8 +311,14 @@ class ResultAggregator:
                 finished=finished_for_flush,
                 is_last=is_last_for_flush,
             )
-        except Exception:
-            pass
+        except Exception as exc:
+            if self.reporter:
+                self.reporter.error(
+                    "output.flush_failed",
+                    t("msg.write_error").format(info=exc),
+                    phase="output",
+                    error_type=type(exc).__name__,
+                )
 
     async def _run_loop(self):
         """
@@ -257,22 +354,58 @@ class ResultAggregator:
             return
         if self._task and not self._task.done():
             return
+        self._loop = asyncio.get_running_loop()
         self._stopped = False
         self._flush_event.clear()
         self._task = asyncio.create_task(self._run_loop())
 
-    async def stop(self) -> None:
+    async def stop(self, flush: bool = True) -> None:
         """
         Stop the aggregator and clean up resources.
         """
-        self._stopped = True
-        self._flush_event.set()
-        if self._task:
-            await self._task
-            self._task = None
         try:
-            await self.flush_once(force=True)
-        except Exception:
-            pass
-        if self.stat_logger:
-            close_logger_handlers(self.stat_logger)
+            self._stopped = True
+            self._flush_event.set()
+            if self._task:
+                if flush:
+                    await self._task
+                else:
+                    self._task.cancel()
+                    try:
+                        await self._task
+                    except asyncio.CancelledError:
+                        pass
+                self._task = None
+            self._loop = None
+            if flush:
+                try:
+                    await self.flush_once(force=True)
+                except Exception as exc:
+                    if self.reporter:
+                        self.reporter.error(
+                            "output.final_flush_failed",
+                            t("msg.write_error").format(info=exc),
+                            phase="output",
+                            error_type=type(exc).__name__,
+                        )
+                total_tested = 0
+                total_valid = 0
+                for category, channels in self.test_results.items():
+                    for name, values in channels.items():
+                        record = build_channel_statistic(category, name, values)
+                        if self.reporter:
+                            record["run_id"] = self.reporter.run_id
+                        self.stat_writer.write(record)
+                        total_tested += record["tested"]
+                        total_valid += record["valid"]
+                if self.reporter:
+                    self.reporter.info(
+                        "statistics.finished",
+                        t("log.statistics_finished").format(tested=total_tested, valid=total_valid),
+                        phase="statistics",
+                        tested=total_tested,
+                        valid=total_valid,
+                        channels=sum(len(channels) for channels in self.test_results.values()),
+                    )
+        finally:
+            self.stat_writer.close()

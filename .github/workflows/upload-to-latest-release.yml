@@ -6,192 +6,263 @@ on:
 permissions:
   contents: write
 
+concurrency:
+  group: upload-to-latest-release-${{ github.repository }}
+  cancel-in-progress: false
+
 jobs:
-  build-and-upload:
-    runs-on: windows-latest
+  test:
+    uses: ./.github/workflows/tests.yml
+
+  prepare:
+    needs: test
+    runs-on: ubuntu-latest
+    outputs:
+      name: ${{ steps.metadata.outputs.name }}
+      version: ${{ steps.metadata.outputs.version }}
+      release_tag: ${{ steps.metadata.outputs.release_tag }}
+      revision: ${{ steps.metadata.outputs.revision }}
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
+
+      - name: Prepare hotfix metadata
+        id: metadata
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          $info = Get-Content version.json -Raw | ConvertFrom-Json
+          if (-not $info.name -or -not $info.version) {
+            Write-Error 'version.json must contain name and version.'
+            exit 1
+          }
+          $tag = gh release view --repo $env:GITHUB_REPOSITORY --json tagName --jq '.tagName'
+          if (-not $tag) {
+            Write-Error 'Latest release was not found.'
+            exit 1
+          }
+          if ($tag.TrimStart('v') -ne [string]$info.version) {
+            Write-Error "version.json version '$($info.version)' does not match latest release '$tag'."
+            exit 1
+          }
+          $revision = (Get-Date).ToUniversalTime().ToString('yyyyMMddHHmmss')
+          Add-Content -Path $env:GITHUB_OUTPUT -Value "name=$($info.name)"
+          Add-Content -Path $env:GITHUB_OUTPUT -Value "version=$($info.version)"
+          Add-Content -Path $env:GITHUB_OUTPUT -Value "release_tag=$tag"
+          Add-Content -Path $env:GITHUB_OUTPUT -Value "revision=$revision"
+
+  build:
+    needs: prepare
+    env:
+      name: ${{ needs.prepare.outputs.name }}
+      version: ${{ needs.prepare.outputs.version }}
+      revision: ${{ needs.prepare.outputs.revision }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            platform: Windows
+          - os: macos-latest
+            platform: macOS
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
 
       - name: Set up Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v6
         with:
-          python-version: '3.13'
+          python-version: '3.14'
           update-environment: true
           cache: 'pipenv'
 
-      - name: Install pipenv
-        run: python -m pip install --upgrade pip; pip3 install --user pipenv
-        shell: pwsh
-
       - name: Install dependencies with pipenv
-        run: pipenv --python 3.13 && pipenv install --dev
-        shell: pwsh
-
-      - name: Build the application
-        run: pipenv run pyinstaller --clean --noconfirm --distpath dist tkinter_ui/tkinter_ui.spec
-        shell: pwsh
-
-      - name: Check dist exists
+        shell: bash
         run: |
-          if (-not (Test-Path -Path dist)) {
-            Write-Error 'dist directory not found. Build failed.'
-            exit 1
-          }
-          Write-Host 'Dist contents:'
-          Get-ChildItem -Path dist -Recurse | Select-Object FullName,Length
-        shell: pwsh
+          python -m pip install --upgrade pip pipenv
+          pipenv --python 3.14
+          pipenv install --dev
 
-      - name: Get version and build time
-        id: inject
+      - name: Embed hotfix metadata
+        shell: bash
         run: |
-          if (-not (Test-Path -Path version.json)) {
-            Write-Error 'version.json not found.'
-            exit 1
-          }
-          $json = Get-Content version.json | ConvertFrom-Json
-          $name = $json.name
-          $ver = $json.version
-          if (-not $ver) { $ver = 'unknown' }
-          try {
-            $tz = [System.TimeZoneInfo]::FindSystemTimeZoneById('Asia/Shanghai')
-            $build_time = [System.TimeZoneInfo]::ConvertTimeFromUtc((Get-Date).ToUniversalTime(), $tz).ToString('yyyy-MM-dd HH:mm:ss')
-          } catch {
-            $build_time = (Get-Date).ToUniversalTime().AddHours(8).ToString('yyyy-MM-dd HH:mm:ss')
-          }
-          $json.build_time = $build_time
-          $json | ConvertTo-Json -Depth 10 | Set-Content version.json
-          Add-Content -Path $env:GITHUB_ENV -Value "version=$ver"
-          Add-Content -Path $env:GITHUB_ENV -Value "build_time=$build_time"
-          $zip_ts = (Get-Date).ToUniversalTime().AddHours(8).ToString('yyyyMMdd-HHmmss')
-          Add-Content -Path $env:GITHUB_ENV -Value "zip_ts=$zip_ts"
-        shell: pwsh
+          python - <<'PY'
+          import json
+          import os
+          from datetime import datetime, timezone
 
-      - name: Package dist into timestamped zip
-        id: package
+          with open("version.json", encoding="utf-8") as file:
+              info = json.load(file)
+          info["build_revision"] = int(os.environ["revision"])
+          info["build_time"] = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
+          info["source_sha"] = os.environ["GITHUB_SHA"]
+          with open("version.json", "w", encoding="utf-8") as file:
+              json.dump(info, file, ensure_ascii=False, indent=2)
+              file.write("\n")
+          PY
+
+      - name: Build the primary GUI application
+        run: pipenv run ui_build
+
+      - name: Package Windows application
+        if: runner.os == 'Windows'
+        shell: pwsh
         run: |
-          if (-not (Test-Path -Path version.json)) {
-            Write-Error 'version.json not found.'
+          $bundle = Join-Path $PWD "dist\$env:name-GUI-v$env:version"
+          if (-not (Test-Path $bundle)) {
+            Write-Error "Windows application directory not found: $bundle"
             exit 1
           }
-          $json = Get-Content version.json | ConvertFrom-Json
-          $name = $json.name
-          $ver = $json.version
-          if (-not $ver) { $ver = 'unknown' }
-          if ($env:zip_ts) { $ts = $env:zip_ts } else { $ts = (Get-Date).ToUniversalTime().AddHours(8).ToString('yyyyMMdd-HHmmss') }
-          $zipName = "${name}-v${ver}-${ts}.zip"
-          $zipPath = Join-Path -Path $PWD -ChildPath $zipName
-          if (Test-Path $zipPath) { Remove-Item $zipPath -Force }
-          Compress-Archive -Path dist\* -DestinationPath $zipPath
-          if (-not (Test-Path $zipPath)) {
-            Write-Error 'Zip creation failed'
-            exit 1
-          }
-          $size = (Get-Item $zipPath).Length
-          if ($size -gt 2147483648) {
-            Write-Error "Zip size ($size bytes) exceeds GitHub's 2GB limit. Aborting upload."
-            exit 1
-          }
-          Write-Host "Zip created: $zipPath (size: $size bytes)"
-          Add-Content -Path $env:GITHUB_OUTPUT -Value "zip_path=$zipPath"
-          Add-Content -Path $env:GITHUB_OUTPUT -Value "zip_name=$zipName"
-        shell: pwsh
+          New-Item -ItemType Directory -Path artifacts -Force | Out-Null
+          $asset = "$env:name-GUI-Windows-$env:RUNNER_ARCH-v$env:version-r$env:revision.zip"
+          Compress-Archive -Path $bundle -DestinationPath (Join-Path $PWD "artifacts\$asset")
 
-      - name: Get latest release upload_url
-        id: get_latest_release
+      - name: Package macOS application
+        if: runner.os == 'macOS'
+        shell: bash
+        run: |
+          app_path="dist/${name}-GUI-v${version}.app"
+          if [[ ! -d "$app_path" ]]; then
+            echo "macOS application bundle not found: $app_path" >&2
+            exit 1
+          fi
+          mkdir -p artifacts
+          asset="${name}-GUI-macOS-${RUNNER_ARCH}-v${version}-r${revision}.zip"
+          ditto -c -k --sequesterRsrc --keepParent "$app_path" "artifacts/$asset"
+
+      - name: Upload GUI artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: gui-${{ matrix.platform }}-${{ runner.arch }}
+          path: artifacts/*.zip
+          if-no-files-found: error
+
+  upload:
+    needs: [prepare, build]
+    runs-on: ubuntu-latest
+    env:
+      name: ${{ needs.prepare.outputs.name }}
+      version: ${{ needs.prepare.outputs.version }}
+      release_tag: ${{ needs.prepare.outputs.release_tag }}
+      revision: ${{ needs.prepare.outputs.revision }}
+    steps:
+      - name: Download GUI artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: gui-*
+          path: release-assets
+          merge-multiple: true
+
+      - name: Upload assets to latest release
+        shell: pwsh
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          if (-not $env:GITHUB_TOKEN) {
-            Write-Error 'GITHUB_TOKEN not available. Set a token with repo access in secrets.RELEASE_PAT or enable permissions.'
+          $ErrorActionPreference = 'Stop'
+          $tag = $env:release_tag
+          $assets = @(Get-ChildItem release-assets -Filter '*.zip' | Select-Object -ExpandProperty FullName)
+          if ($assets.Count -ne 2) {
+            Write-Error "Expected two desktop assets, found $($assets.Count)."
             exit 1
           }
-          $headers = @{ Authorization = "Bearer $env:GITHUB_TOKEN"; Accept = 'application/vnd.github+json' }
-          $apiUrl = "https://api.github.com/repos/$env:GITHUB_REPOSITORY/releases/latest"
-          try {
-            $release = Invoke-RestMethod -Uri $apiUrl -Headers $headers -UseBasicParsing -ErrorAction Stop
-          } catch {
-            Write-Error "Failed to get latest release: $($_.Exception.Message)"
-            exit 1
-          }
-          # Keep the original templated upload_url (e.g. ends with '{?name,label}') and also a cleaned version without template
-          $upload_url_template = $release.upload_url.Trim()
-          $upload_url = ($upload_url_template -replace '\{.*\}$','').Trim()
-          if (-not $upload_url_template) {
-            Write-Error "Parsed upload_url_template is empty. Full release object: $($release | ConvertTo-Json -Depth 4)"
-            exit 1
-          }
-          Write-Host "Latest release id: $($release.id)"
-          Write-Host "Upload URL (template): $upload_url_template"
-          Write-Host "Upload URL (clean): $upload_url"
-          # Export both values
-          Add-Content -Path $env:GITHUB_OUTPUT -Value "upload_url=$upload_url"
-          Add-Content -Path $env:GITHUB_OUTPUT -Value "upload_url_template=$upload_url_template"
-        shell: pwsh
 
-      - name: Debug upload args
-        run: |
-          Write-Host "--- DEBUG: upload args (delimited) ---"
-          Write-Host "UPLOAD_URL_TEMPLATE=|||${{ steps.get_latest_release.outputs.upload_url_template }}|||"
-          Write-Host "UPLOAD_URL=|||${{ steps.get_latest_release.outputs.upload_url }}|||"
-          Write-Host "ZIP_PATH=|||${{ steps.package.outputs.zip_path }}|||"
-          Write-Host "ZIP_NAME=|||${{ steps.package.outputs.zip_name }}|||"
-          if (-not (Test-Path "${{ steps.package.outputs.zip_path }}")) {
-            Write-Error "Zip not found at path: $(${{ steps.package.outputs.zip_path }})"
+          $assetNames = @($assets | ForEach-Object { Split-Path $_ -Leaf })
+          $windowsAsset = @($assetNames | Where-Object { $_ -match '-Windows-X64-' })
+          $macosAsset = @($assetNames | Where-Object { $_ -match '-macOS-ARM64-' })
+          if ($windowsAsset.Count -ne 1 -or $macosAsset.Count -ne 1) {
+            Write-Error 'Expected one Windows X64 asset and one macOS ARM64 asset.'
             exit 1
           }
-        shell: pwsh
 
-      - name: Delete existing asset with same name (if any)
-        if: always()
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          $zipName = "${{ steps.package.outputs.zip_name }}"
-          if (-not $env:GITHUB_TOKEN) {
-            Write-Error 'GITHUB_TOKEN not available; cannot manage existing assets.'
-            exit 1
-          }
-          $headers = @{ Authorization = "Bearer $env:GITHUB_TOKEN"; Accept = 'application/vnd.github+json' }
-          $apiUrl = "https://api.github.com/repos/$env:GITHUB_REPOSITORY/releases/latest"
-          try {
-            $release = Invoke-RestMethod -Uri $apiUrl -Headers $headers -UseBasicParsing -ErrorAction Stop
-          } catch {
-            Write-Warning "Failed to fetch latest release to check assets: $($_.Exception.Message)"
-            exit 0
-          }
-          if (-not $release.assets) { Write-Host "No assets on latest release."; exit 0 }
-          $found = $false
-          foreach ($a in $release.assets) {
-            if ($a.name -eq $zipName) {
-              Write-Host "Found existing asset with same name: $($a.name) (id: $($a.id)). Deleting..."
-              $delUrl = "https://api.github.com/repos/$env:GITHUB_REPOSITORY/releases/assets/$($a.id)"
-              try {
-                Invoke-RestMethod -Uri $delUrl -Method Delete -Headers $headers -UseBasicParsing -ErrorAction Stop
-                Write-Host "Deleted asset id $($a.id)"
-                $found = $true
-              } catch {
-                Write-Warning "Failed to delete existing asset id $($a.id): $($_.Exception.Message)"
-              }
+          $stateDirectory = Join-Path $PWD 'release-state'
+          New-Item -ItemType Directory -Path $stateDirectory -Force | Out-Null
+          $manifestName = 'UPDATE-MANIFEST.json'
+          $manifestPath = Join-Path $stateDirectory $manifestName
+          $releaseBefore = gh api "repos/$env:GITHUB_REPOSITORY/releases/tags/$tag" | ConvertFrom-Json
+          $existingManifest = @($releaseBefore.assets | Where-Object { $_.name -eq $manifestName })
+          if ($existingManifest.Count -gt 0) {
+            gh release download $tag --pattern $manifestName --dir $stateDirectory --repo $env:GITHUB_REPOSITORY
+            if ($LASTEXITCODE -ne 0) {
+              Write-Error 'Unable to download the existing update manifest.'
+              exit $LASTEXITCODE
             }
           }
-          if (-not $found) { Write-Host "No existing asset with name $zipName found." }
-        shell: pwsh
 
-      - name: Upload zip to latest release
-        id: upload_asset
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.get_latest_release.outputs.upload_url_template }}
-          asset_path: ${{ steps.package.outputs.zip_path }}
-          asset_name: ${{ steps.package.outputs.zip_name }}
-          asset_content_type: application/zip
+          foreach ($asset in $assets) {
+            gh release upload $tag $asset --repo $env:GITHUB_REPOSITORY
+            if ($LASTEXITCODE -ne 0) {
+              exit $LASTEXITCODE
+            }
+          }
+
+          $releaseAfter = gh api "repos/$env:GITHUB_REPOSITORY/releases/tags/$tag" | ConvertFrom-Json
+          $remoteNames = @($releaseAfter.assets | Select-Object -ExpandProperty name)
+          foreach ($assetName in $assetNames) {
+            if ($assetName -notin $remoteNames) {
+              Write-Error "Uploaded asset was not found in the release: $assetName"
+              exit 1
+            }
+          }
+
+          $builds = @()
+          if (Test-Path $manifestPath) {
+            $existing = Get-Content $manifestPath -Raw | ConvertFrom-Json
+            if ($existing.schema_version -ne 1) {
+              Write-Error 'The existing update manifest has an unsupported schema.'
+              exit 1
+            }
+            if ([string]$existing.version -ne $env:version) {
+              Write-Error 'The existing update manifest version does not match version.json.'
+              exit 1
+            }
+            $builds = @($existing.builds | Where-Object { [string]$_.revision -ne $env:revision })
+          }
+
+          $builds += [ordered]@{
+            revision = [long]$env:revision
+            status = 'active'
+            source_sha = $env:GITHUB_SHA
+            workflow_run_id = $env:GITHUB_RUN_ID
+            created_at = (Get-Date).ToUniversalTime().ToString('o')
+            assets = [ordered]@{
+              'windows-x64' = $windowsAsset[0]
+              'macos-arm64' = $macosAsset[0]
+            }
+          }
+          [ordered]@{
+            schema_version = 1
+            version = $env:version
+            builds = @($builds)
+          } | ConvertTo-Json -Depth 8 | Set-Content -Path $manifestPath -Encoding utf8NoBOM
+
+          $checksums = Join-Path $stateDirectory 'SHA256SUMS.txt'
+          $checksumLines = @($releaseAfter.assets | Where-Object {
+            $_.name -like '*.zip'
+          } | Sort-Object name | ForEach-Object {
+            $digest = [string]$_.digest
+            if (-not $digest.StartsWith('sha256:')) {
+              Write-Error "Release asset is missing a SHA-256 digest: $($_.name)"
+              exit 1
+            }
+            "$($digest.Substring(7).ToLower())  $($_.name)"
+          })
+          if ($checksumLines.Count -eq 0) {
+            Write-Error 'No ZIP assets were found when generating checksums.'
+            exit 1
+          }
+          $checksumLines | Set-Content -Path $checksums -Encoding utf8NoBOM
+
+          gh release upload $tag $checksums --clobber --repo $env:GITHUB_REPOSITORY
+          if ($LASTEXITCODE -ne 0) {
+            exit $LASTEXITCODE
+          }
+          gh release upload $tag $manifestPath --clobber --repo $env:GITHUB_REPOSITORY
+          if ($LASTEXITCODE -ne 0) {
+            exit $LASTEXITCODE
+          }
 
       - name: Confirm upload
-        if: ${{ success() }}
-        run: |
-          Write-Host "Uploaded ${{ steps.package.outputs.zip_name }} to the latest release."
         shell: pwsh
-
+        run: Write-Host "Uploaded revision $env:revision to release $env:release_tag."
