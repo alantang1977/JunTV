@@ -7,51 +7,114 @@ permissions:
   contents: write
 
 jobs:
-  build-and-release:
-    runs-on: windows-latest
+  test:
+    uses: ./.github/workflows/tests.yml
+
+  build:
+    needs: test
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            platform: Windows
+          - os: macos-latest
+            platform: macOS
+    runs-on: ${{ matrix.os }}
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.14'
+          update-environment: true
+          cache: 'pipenv'
+
+      - name: Install dependencies with pipenv
+        shell: bash
+        run: |
+          python -m pip install --upgrade pip pipenv
+          pipenv --python 3.14
+          pipenv install --dev
+
+      - name: Build the primary GUI application
+        run: pipenv run ui_build
+
+      - name: Read version info
+        shell: bash
+        run: |
+          python - <<'PY'
+          import json
+          import os
+
+          with open("version.json", encoding="utf-8") as file:
+              info = json.load(file)
+          if not info.get("name") or not info.get("version"):
+              raise SystemExit("version.json must contain name and version")
+          with open(os.environ["GITHUB_ENV"], "a", encoding="utf-8") as file:
+              file.write(f"name={info['name']}\nversion={info['version']}\n")
+          PY
+
+      - name: Package Windows application
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $bundle = Join-Path $PWD "dist\$env:name-GUI-v$env:version"
+          if (-not (Test-Path $bundle)) {
+            Write-Error "Windows application directory not found: $bundle"
+            exit 1
+          }
+          New-Item -ItemType Directory -Path artifacts -Force | Out-Null
+          $asset = "$env:name-GUI-Windows-$env:RUNNER_ARCH-v$env:version.zip"
+          Compress-Archive -Path $bundle -DestinationPath (Join-Path $PWD "artifacts\$asset")
+
+      - name: Package macOS application
+        if: runner.os == 'macOS'
+        shell: bash
+        run: |
+          app_path="dist/${name}-GUI-v${version}.app"
+          if [[ ! -d "$app_path" ]]; then
+            echo "macOS application bundle not found: $app_path" >&2
+            exit 1
+          fi
+          mkdir -p artifacts
+          asset="${name}-GUI-macOS-${RUNNER_ARCH}-v${version}.zip"
+          ditto -c -k --sequesterRsrc --keepParent "$app_path" "artifacts/$asset"
+
+      - name: Upload GUI artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: gui-${{ matrix.platform }}-${{ runner.arch }}
+          path: artifacts/*.zip
+          if-no-files-found: error
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
         with:
           fetch-depth: 0
           fetch-tags: true
 
-      - name: Set up Python
-        uses: actions/setup-python@v4
+      - name: Download GUI artifacts
+        uses: actions/download-artifact@v4
         with:
-          python-version: '3.13'
-          update-environment: true
-          cache: 'pipenv'
-
-      - name: Install pipenv
-        shell: pwsh
-        run: python -m pip install --upgrade pip pipenv
-
-      - name: Install dependencies with pipenv
-        shell: pwsh
-        run: |
-          pipenv --python 3.13
-          pipenv install --dev
-
-      - name: Build the application
-        shell: pwsh
-        run: pipenv run pyinstaller --clean --noconfirm tkinter_ui/tkinter_ui.spec
+          pattern: gui-*
+          path: release-assets
+          merge-multiple: true
 
       - name: Read version info
-        id: version
         shell: pwsh
         run: |
-          if (-not (Test-Path -Path version.json)) {
-            Write-Error 'version.json not found.'
-            exit 1
-          }
-
           $json = Get-Content version.json -Raw | ConvertFrom-Json
           if (-not $json.name -or -not $json.version) {
             Write-Error 'version.json must contain name and version.'
             exit 1
           }
-
           Add-Content -Path $env:GITHUB_ENV -Value "name=$($json.name)"
           Add-Content -Path $env:GITHUB_ENV -Value "version=$($json.version)"
           Add-Content -Path $env:GITHUB_ENV -Value "release_tag=$($json.version)"
@@ -60,24 +123,16 @@ jobs:
       - name: Validate release tag does not already exist
         shell: pwsh
         run: |
-          $tag = $env:release_tag
-          if (-not $tag) {
-            Write-Error 'release_tag is empty.'
-            exit 1
-          }
-
-          $existingTag = git tag --list $tag
+          $existingTag = git tag --list $env:release_tag
           if ($existingTag) {
-            Write-Error "Tag '$tag' already exists. Bump version.json before releasing."
+            Write-Error "Tag '$env:release_tag' already exists. Bump version.json before releasing."
             exit 1
           }
 
       - name: Generate release notes from commit messages
-        id: notes
         shell: pwsh
         run: |
           $ErrorActionPreference = 'Stop'
-
           $versionCommits = @(git log --format=%H -- version.json)
           $baseCommit = ''
 
@@ -100,7 +155,6 @@ jobs:
           }
 
           $rawMessages = git log --reverse --format=%s "$baseCommit..HEAD"
-
           $skipPatterns = @(
             '^(?i)release:\s*v?\d',
             '^(?i)release\b',
@@ -112,11 +166,10 @@ jobs:
             '^(?i)merge\b'
           )
 
-          $notesLines = New-Object System.Collections.Generic.List[string]
+          $notes = New-Object System.Collections.Generic.List[string]
           foreach ($line in $rawMessages) {
             $message = $line.Trim()
             if (-not $message) { continue }
-
             $skip = $false
             foreach ($pattern in $skipPatterns) {
               if ($message -match $pattern) {
@@ -124,80 +177,34 @@ jobs:
                 break
               }
             }
-
-            if ($skip) { continue }
-            $notesLines.Add("- $message")
+            if (-not $skip) {
+              $notes.Add("- $message")
+            }
           }
 
-          $notesPath = Join-Path $PWD 'release-notes.md'
-          $content = New-Object System.Collections.Generic.List[string]
-          $content.AddRange($notesLines)
-          $content | Set-Content -Path $notesPath -Encoding utf8
-
-          Add-Content -Path $env:GITHUB_ENV -Value "base_commit=$baseCommit"
-          Add-Content -Path $env:GITHUB_OUTPUT -Value "notes_path=$notesPath"
-
-      - name: Summarize release notes
-        shell: pwsh
-        run: |
-          Write-Host "Release notes generated from base commit: $env:base_commit"
-          Get-Content "${{ steps.notes.outputs.notes_path }}" | ForEach-Object {
-            Write-Host $_
+          if ($notes.Count -eq 0) {
+            $notes.Add("Release $env:release_title")
           }
-
-      - name: Package dist into zip
-        id: package
-        shell: pwsh
-        run: |
-          $zipName = "$($env:name)-v$($env:version).zip"
-          $zipPath = Join-Path $PWD $zipName
-
-          if (-not (Test-Path -Path dist)) {
-            Write-Error 'dist directory not found. Build failed.'
-            exit 1
-          }
-
-          if (Test-Path $zipPath) {
-            Remove-Item $zipPath -Force
-          }
-
-          Compress-Archive -Path dist\* -DestinationPath $zipPath
-
-          if (-not (Test-Path $zipPath)) {
-            Write-Error 'Zip creation failed.'
-            exit 1
-          }
-
-          $size = (Get-Item $zipPath).Length
-          if ($size -gt 2147483648) {
-            Write-Error "Zip size ($size bytes) exceeds GitHub's 2 GB limit."
-            exit 1
-          }
-
-          Add-Content -Path $env:GITHUB_OUTPUT -Value "zip_path=$zipPath"
-          Add-Content -Path $env:GITHUB_OUTPUT -Value "zip_name=$zipName"
+          $notes | Set-Content -Path release-notes.md -Encoding utf8
+          Write-Host "Release notes generated from base commit: $baseCommit"
 
       - name: Publish GitHub release
         shell: pwsh
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          $tag = $env:release_tag
-          $title = $env:release_title
-          $zipPath = "${{ steps.package.outputs.zip_path }}"
-          $notesPath = "${{ steps.notes.outputs.notes_path }}"
-
-          if (-not $env:GH_TOKEN) {
-            Write-Error 'GH_TOKEN is not available.'
+          $assets = @(Get-ChildItem release-assets -Filter '*.zip' | Select-Object -ExpandProperty FullName)
+          if ($assets.Count -ne 2) {
+            Write-Error "Expected two desktop assets, found $($assets.Count)."
             exit 1
           }
-
-          gh release create $tag $zipPath --title $title --notes-file $notesPath --target $env:GITHUB_SHA
+          $checksums = Join-Path $PWD 'release-assets/SHA256SUMS.txt'
+          $assets | ForEach-Object {
+            $hash = (Get-FileHash -LiteralPath $_ -Algorithm SHA256).Hash.ToLower()
+            "$hash  $(Split-Path $_ -Leaf)"
+          } | Set-Content -Path $checksums -Encoding utf8NoBOM
+          gh release create $env:release_tag $assets $checksums --title $env:release_title --notes-file release-notes.md --target $env:GITHUB_SHA
 
       - name: Confirm release
         shell: pwsh
-        run: |
-          Write-Host "Released version $env:version with asset ${{ steps.package.outputs.zip_name }}."
-
-
-
+        run: Write-Host "Released version $env:version with Windows and macOS desktop assets."

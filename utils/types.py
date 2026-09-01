@@ -8,7 +8,7 @@ class ChannelData(TypedDict):
     """
     Channel data types, including url, date, resolution, origin and ipv_type
     """
-    id: int
+    id: str
     url: str
     host: str
     date: NotRequired[str | None]

@@ -1,4 +1,4 @@
-FROM python:3.13-alpine AS builder
+FROM python:3.14-alpine AS builder
 
 ARG APP_WORKDIR=/iptv-api
 ARG NGINX_VER=1.27.4
@@ -29,7 +29,7 @@ RUN ./configure \
     make && \
     make install
 
-FROM python:3.13-alpine
+FROM python:3.14-alpine
 
 ARG APP_WORKDIR=/iptv-api
 

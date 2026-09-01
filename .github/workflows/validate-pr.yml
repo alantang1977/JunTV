@@ -18,16 +18,14 @@ jobs:
         with:
           script: |
             const pr = context.payload.pull_request;
-            if (!pr) {
-              core.info('No pull request in context, exiting.');
+            if (!pr || pr.state !== 'open') {
+              core.info('No open pull request in context, exiting.');
               return;
             }
 
             const owner = context.repo.owner;
             const repo = context.repo.repo;
             const number = pr.number;
-            const author = pr.user.login;
-            const repoOwner = 'Guovin';
 
             const prInfo = await github.rest.pulls.get({
               owner,
@@ -36,7 +34,10 @@ jobs:
             });
 
             const commits = prInfo.data.commits || 0;
-            const body = (prInfo.data.body || '').toLowerCase();
+            const body = prInfo.data.body || '';
+            const authorAssociation = prInfo.data.author_association || 'NONE';
+            const trustedAssociations = new Set(['OWNER', 'MEMBER', 'COLLABORATOR']);
+            const isTrustedContributor = trustedAssociations.has(authorAssociation);
 
             let page = 1;
             let files = [];
@@ -48,55 +49,112 @@ jobs:
                 per_page: 100,
                 page
               });
-              files = files.concat(res.data.map(f => f.filename));
+              files = files.concat(res.data.map(file => file.filename));
               if (res.data.length < 100) break;
               page++;
             }
 
-            const changedConfigOrOutput = files.some(f => f.startsWith('config/') || f.startsWith('output/'));
-            const isOwner = (author === repoOwner);
-            const hasCheckedBox = /\[x\]/i.test(body);
+            const isGeneratedOrPersonalPath = file =>
+              file === 'config' ||
+              file.startsWith('config/') ||
+              file === 'output' ||
+              file.startsWith('output/');
+
+            const changedConfigOrOutput = files.some(isGeneratedOrPersonalPath);
+            const contributionConfirmation = /\[\s*x\s*\][^\n]*pr-contribution-confirmed/i.test(body);
 
             const invalidReasons = [];
-            if (commits === 0) invalidReasons.push('commits count is 0');
-            if (!hasCheckedBox) invalidReasons.push('PR template has no checked box (\\[x\\])');
-            if (changedConfigOrOutput && !isOwner) invalidReasons.push('modified files under config/ or output/ by non-owner');
+            if (commits === 0) {
+              invalidReasons.push('This pull request does not contain any commits.');
+            }
+            if (!isTrustedContributor && !contributionConfirmation) {
+              invalidReasons.push('The intentional contribution confirmation is missing.');
+            }
+            if (!isTrustedContributor && changedConfigOrOutput) {
+              invalidReasons.push('The pull request modifies config/ or output/, which is reserved for personal configuration and generated results.');
+            }
+
+            const invalidLabel = 'invalid';
+            const currentLabels = (prInfo.data.labels || []).map(label => label.name);
 
             if (invalidReasons.length === 0) {
+              if (currentLabels.includes(invalidLabel)) {
+                try {
+                  await github.rest.issues.removeLabel({
+                    owner,
+                    repo,
+                    issue_number: number,
+                    name: invalidLabel
+                  });
+                } catch (error) {
+                  core.warning('Failed to remove invalid label: ' + error.message);
+                }
+              }
               core.info('PR looks valid.');
               return;
             }
 
-            const label = 'invalid';
             try {
               await github.rest.issues.addLabels({
                 owner,
                 repo,
                 issue_number: number,
-                labels: [label]
+                labels: [invalidLabel]
               });
-            } catch (e) {
+            } catch (error) {
               try {
                 await github.rest.issues.createLabel({
                   owner,
                   repo,
-                  name: label,
+                  name: invalidLabel,
                   color: 'd73a4a',
                   description: 'Automatically marked invalid PR'
                 });
+              } catch (createError) {
+                if (createError.status !== 422) {
+                  core.warning('Failed to create invalid label: ' + createError.message);
+                }
+              }
+              try {
                 await github.rest.issues.addLabels({
                   owner,
                   repo,
                   issue_number: number,
-                  labels: [label]
+                  labels: [invalidLabel]
                 });
-              } catch (err) {
-                core.warning('Failed to create/add label: ' + err.message);
+              } catch (addError) {
+                core.warning('Failed to add invalid label: ' + addError.message);
               }
             }
 
-            if (process.env.ALLOW_PR_COMMENT === 'true') {
-              const commentBody = `This PR has been automatically labeled as "invalid" and closed. Triggered rules:\n- ${invalidReasons.join('\n- ')}\n\nPlease consult the repository contribution guidelines before submitting a valid PR.`;
+            const marker = '<!-- invalid-pr-validator -->';
+            const comments = await github.paginate(github.rest.issues.listComments, {
+              owner,
+              repo,
+              issue_number: number,
+              per_page: 100
+            });
+            const hasValidationComment = comments.some(comment => comment.body && comment.body.includes(marker));
+
+            if (!hasValidationComment) {
+              const commentBody = [
+                marker,
+                'This pull request was automatically labeled as `invalid` and closed because:',
+                '',
+                ...invalidReasons.map(reason => `- ${reason}`),
+                '',
+                'If you only wanted to update your own fork:',
+                '',
+                '1. Return to your fork repository.',
+                '2. Click **Sync fork**.',
+                '3. Click **Update branch**.',
+                '4. If there is a conflict, use **Discard commits**.',
+                '',
+                'Pull Requests are for intentional code contributions to the upstream repository.',
+                'Please reopen this PR only after correcting the issue and confirming the contribution checklist.',
+                '',
+                '如果你只是想更新自己的 Fork，请按照上面的步骤操作，不要创建 PR。'
+              ].join('\n');
               try {
                 await github.rest.issues.createComment({
                   owner,
@@ -104,11 +162,9 @@ jobs:
                   issue_number: number,
                   body: commentBody
                 });
-              } catch (e) {
-                core.warning('Failed to create comment: ' + e.message);
+              } catch (error) {
+                core.warning('Failed to create validation comment: ' + error.message);
               }
-            } else {
-              core.info('Skipping comment to avoid notifications (set ALLOW_PR_COMMENT=true to enable).');
             }
 
             await github.rest.pulls.update({

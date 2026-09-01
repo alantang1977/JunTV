@@ -22,13 +22,13 @@ jobs:
       - name: Set branch name
         id: vars
         run: echo "BRANCH_NAME=${{ github.repository_owner == 'Guovin' && 'gd' || 'master' }}" >> $GITHUB_ENV
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v6
         with:
           ref: ${{ env.BRANCH_NAME }}
-      - name: Run with setup-python 3.13
-        uses: actions/setup-python@v4
+      - name: Run with setup-python 3.14
+        uses: actions/setup-python@v6
         with:
-          python-version: '3.13'
+          python-version: '3.14'
           update-environment: true
           cache: 'pipenv'
       - name: Install FFmpeg
@@ -36,7 +36,7 @@ jobs:
       - name: Install pipenv
         run: pip3 install --user pipenv
       - name: Install dependecies
-        run: pipenv --python 3.13 && pipenv install --deploy
+        run: pipenv --python 3.14 && pipenv install --deploy
       - name: Update
         run: pipenv run dev
       - name: Commit and push if changed
