@@ -6,6 +6,7 @@ from typing import Dict, Optional, Set
 
 MAX_BACKOFF = 24 * 3600
 BASE_BACKOFF = 60
+FREEZE_THRESHOLD = 3
 
 _frozen: Dict[str, Dict] = {}
 
@@ -19,9 +20,13 @@ def mark_url_bad(url: str, initial: bool = False) -> None:
         return
     meta = _frozen.setdefault(url, {"bad_count": 0, "last_bad": 0, "last_good": 0, "frozen_until": None})
     if initial:
-        meta["bad_count"] = max(meta["bad_count"], 3)
-    meta["bad_count"] += 1
+        meta["bad_count"] = max(meta["bad_count"], FREEZE_THRESHOLD)
+    else:
+        meta["bad_count"] += 1
     meta["last_bad"] = _now_ts()
+    if meta["bad_count"] < FREEZE_THRESHOLD:
+        meta["frozen_until"] = None
+        return
     backoff = min(MAX_BACKOFF, (2 ** meta["bad_count"]) * BASE_BACKOFF)
     meta["frozen_until"] = _now_ts() + backoff
 
@@ -33,10 +38,9 @@ def mark_url_good(url: str) -> None:
     if not meta:
         return
     meta["last_good"] = _now_ts()
-    meta["bad_count"] = max(0, meta.get("bad_count", 0) - 1)
-    meta["frozen_until"] = None
-    if meta["bad_count"] == 0:
-        _frozen.pop(url, None)
+    # A successful probe breaks the consecutive-failure streak. Keeping the
+    # old count would make a later, unrelated failure freeze the URL too soon.
+    _frozen.pop(url, None)
 
 
 def is_url_frozen(url: str) -> bool:

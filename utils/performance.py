@@ -15,6 +15,8 @@ class PerformanceSettings:
     speed_test_concurrency: int
     probe_concurrency: int
     fetch_workers: int
+    epg_fetch_concurrency: int
+    epg_parse_concurrency: int
 
 
 def _read_text(path):
@@ -131,6 +133,15 @@ def get_performance_settings(mode="auto", speed_test_limit=0):
     probe_concurrency = min(probe_concurrency, memory_probe_limit, cpu_probe_limit)
     fetch_workers = min(fetch_workers, memory_fetch_limit)
 
+    if resolved_mode == "powersave":
+        epg_fetch_concurrency = 1
+    elif resolved_mode == "fast" and memory_gb >= 8:
+        epg_fetch_concurrency = 4
+    else:
+        epg_fetch_concurrency = 2
+    epg_fetch_concurrency = min(epg_fetch_concurrency, fetch_workers)
+    epg_parse_concurrency = 2 if resolved_mode == "fast" and memory_gb >= 8 else 1
+
     try:
         configured_limit = int(speed_test_limit or 0)
     except (TypeError, ValueError):
@@ -146,4 +157,6 @@ def get_performance_settings(mode="auto", speed_test_limit=0):
         speed_test_concurrency=max(1, http_concurrency),
         probe_concurrency=max(1, probe_concurrency),
         fetch_workers=max(1, fetch_workers),
+        epg_fetch_concurrency=max(1, epg_fetch_concurrency),
+        epg_parse_concurrency=max(1, epg_parse_concurrency),
     )
