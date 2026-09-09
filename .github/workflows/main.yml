@@ -1,180 +1,49 @@
-name: Generate playlist manually
-
-# ⚠️注意：请不要在 fork 的仓库中添加 `on: schedule` 定时任务（cron）。
-# 生成结果只能发布到 `playlist-latest` Release 或外部端点，不得提交回 Git。
-# 如需要频繁更新或定时执行，请使用 Docker、命令行、GUI 或外部对象存储。
-#
-# ⚠️NOTICE: Do NOT add `on: schedule` cron triggers in forked repositories.
-# Publish generated results only to the `playlist-latest` release or an external endpoint; never commit them to Git.
-# Use Docker, the CLI, the GUI, or external object storage for frequent or scheduled runs.
+name: 'Update schedule'
 
 on:
+  # 保留手动触发按钮，可随时点击运行
   workflow_dispatch:
+  # 定时自动更新：每周一、周四 UTC 00:00 执行（对应北京时间 08:00）
+  schedule:
+    - cron: '0 0 * * 1,4'
 
+# 授予工作流仓库写入权限，确保能推送更新结果
 permissions:
   contents: write
 
-concurrency:
-  group: playlist-release-${{ github.repository }}
-  cancel-in-progress: false
-
 jobs:
-  publish:
-    runs-on: ubuntu-latest
+  push:
+    runs-on: ${{ matrix.operating-system }}
+    strategy:
+      matrix:
+        operating-system: [ 'ubuntu-latest' ]
     steps:
-      - name: Checkout source and configuration
-        uses: actions/checkout@v6
+      - name: Set branch name
+        id: vars
+        run: echo "BRANCH_NAME=${{ github.repository_owner == 'Guovin' && 'gd' || 'main' }}" >> $GITHUB_ENV
+      - uses: actions/checkout@v6
         with:
-          fetch-depth: 1
-
-      - name: Load upstream configuration
-        if: github.repository_owner == 'Guovin'
-        run: |
-          git fetch --depth=1 origin gd
-          git archive FETCH_HEAD config | tar -x
-
-      - name: Record checked-out revision and state key
-        id: source
-        env:
-          CONFIG_HASH: ${{ hashFiles('config/**/*.ini', 'config/**/*.txt', 'config/**/*.m3u') }}
-        run: |
-          echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
-          echo "state_prefix=playlist-state-v1-${RUNNER_OS}-${CONFIG_HASH}-" >> "$GITHUB_OUTPUT"
-          echo "state_key=playlist-state-v1-${RUNNER_OS}-${CONFIG_HASH}-${GITHUB_RUN_ID}" >> "$GITHUB_OUTPUT"
-          mkdir -p "$RUNNER_TEMP/iptv-config-before"
-          cp -a config/. "$RUNNER_TEMP/iptv-config-before/"
-
-      - name: Remove generated files from the checkout
-        run: rm -rf -- output release-assets
-
-      - name: Restore result history
-        id: restore-state
-        uses: actions/cache/restore@v4
-        with:
-          path: |
-            output/data/cache.gz
-            output/data/frozen.gz
-          key: ${{ steps.source.outputs.state_key }}
-          restore-keys: ${{ steps.source.outputs.state_prefix }}
-
-      - name: Set up Python 3.14
+          ref: ${{ env.BRANCH_NAME }}
+      - name: Run with setup-python 3.14
         uses: actions/setup-python@v6
         with:
           python-version: '3.14'
           update-environment: true
-          cache: pipenv
-
+          cache: 'pipenv'
       - name: Install FFmpeg
         run: sudo apt-get update && sudo apt-get install -y ffmpeg
-
+      - name: Install pipenv
+        run: pip3 install --user pipenv
       - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip pipenv
-          pipenv --python 3.14
-          pipenv install --deploy
-
-      - name: Generate playlist results
-        env:
-          IPTV_API_ARTIFACT_BASE_URL: https://github.com/${{ github.repository }}/releases/download/playlist-latest
+        run: pipenv --python 3.14 && pipenv install --deploy
+      - name: Update
         run: pipenv run dev
-
-      - name: Prepare public release assets
-        id: assets
+      - name: Commit and push if changed
         run: |
-          final_file="$(pipenv run python -c 'from utils.config import config; print(config.final_file)')"
-          pipenv run python scripts/publish_results.py \
-            --final-file "$final_file" \
-            --destination release-assets
-          echo "final_file=$final_file" >> "$GITHUB_OUTPUT"
-
-      - name: Report non-persistent configuration changes
-        run: |
-          if ! diff -qr "$RUNNER_TEMP/iptv-config-before" config >/dev/null; then
-            echo "::warning::The update changed files under config/. These changes are not committed by the workflow."
-            {
-              echo "### Configuration notice"
-              echo
-              echo "The update changed files under \`config/\` (for example through automatic source disabling)."
-              echo "The workflow intentionally did not commit those changes. Use Docker, CLI, or the GUI when this state must persist."
-            } >> "$GITHUB_STEP_SUMMARY"
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git add .
+          if ! git diff --staged --quiet; then
+            git commit -m "Github Action Auto Updated"
+            git push
           fi
-
-      - name: Publish rolling playlist release
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          RELEASE_TAG: playlist-latest
-          SOURCE_SHA: ${{ steps.source.outputs.sha }}
-        run: |
-          if ! gh release view "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
-            gh release create "$RELEASE_TAG" \
-              --repo "$GITHUB_REPOSITORY" \
-              --target "$SOURCE_SHA" \
-              --title "Latest generated playlist" \
-              --notes "Rolling, manually generated IPTV results. Assets are replaced by each successful run." \
-              --prerelease
-          fi
-
-          mapfile -d '' local_assets < <(find release-assets -maxdepth 1 -type f -print0 | sort -z)
-          gh release upload "$RELEASE_TAG" "${local_assets[@]}" \
-            --repo "$GITHUB_REPOSITORY" \
-            --clobber
-
-          mapfile -t remote_assets < <(
-            gh release view "$RELEASE_TAG" \
-              --repo "$GITHUB_REPOSITORY" \
-              --json assets \
-              --jq '.assets[].name'
-          )
-          for asset in "${remote_assets[@]}"; do
-            if [[ ! -f "release-assets/$asset" ]]; then
-              gh release delete-asset "$RELEASE_TAG" "$asset" \
-                --repo "$GITHUB_REPOSITORY" \
-                --yes
-            fi
-          done
-
-          find release-assets -maxdepth 1 -type f -printf '%f\n' | sort > /tmp/local-assets.txt
-          gh release view "$RELEASE_TAG" \
-            --repo "$GITHUB_REPOSITORY" \
-            --json assets \
-            --jq '.assets[].name' | sort > /tmp/remote-assets.txt
-          diff -u /tmp/local-assets.txt /tmp/remote-assets.txt
-
-      - name: Check that Git history was not changed
-        env:
-          SOURCE_SHA: ${{ steps.source.outputs.sha }}
-        run: test "$(git rev-parse HEAD)" = "$SOURCE_SHA"
-
-      - name: Detect reusable result state
-        id: result-state
-        run: |
-          if [[ -f output/data/cache.gz || -f output/data/frozen.gz ]]; then
-            echo "available=true" >> "$GITHUB_OUTPUT"
-          fi
-
-      - name: Save result history
-        if: steps.result-state.outputs.available == 'true' && steps.restore-state.outputs.cache-hit != 'true'
-        uses: actions/cache/save@v4
-        with:
-          path: |
-            output/data/cache.gz
-            output/data/frozen.gz
-          key: ${{ steps.source.outputs.state_key }}
-
-      - name: Add subscription links to summary
-        env:
-          RELEASE_BASE: https://github.com/${{ github.repository }}/releases/download/playlist-latest
-        run: |
-          {
-            echo "### Published playlist"
-            echo
-            if [[ -f release-assets/result.m3u ]]; then
-              echo "- M3U: $RELEASE_BASE/result.m3u"
-            fi
-            echo "- TXT: $RELEASE_BASE/result.txt"
-            if [[ -f release-assets/epg.gz ]]; then
-              echo "- EPG: $RELEASE_BASE/epg.gz"
-            fi
-            echo
-            echo "Generated from \`${{ steps.assets.outputs.final_file }}\` without creating a Git commit."
-          } >> "$GITHUB_STEP_SUMMARY"
