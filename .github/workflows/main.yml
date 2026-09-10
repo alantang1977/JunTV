@@ -1,16 +1,13 @@
 name: 'Update schedule'
-
 on:
   # 保留手动触发按钮，可随时点击运行
   workflow_dispatch:
   # 定时自动更新：每周一、周四 UTC 00:00 执行（对应北京时间 08:00）
   schedule:
     - cron: '0 0 * * 1,4'
-
 # 授予工作流仓库写入权限，确保能推送更新结果
 permissions:
   contents: write
-
 jobs:
   push:
     runs-on: ${{ matrix.operating-system }}
@@ -21,23 +18,48 @@ jobs:
       - name: Set branch name
         id: vars
         run: echo "BRANCH_NAME=${{ github.repository_owner == 'Guovin' && 'gd' || 'main' }}" >> $GITHUB_ENV
+
       - uses: actions/checkout@v6
         with:
           ref: ${{ env.BRANCH_NAME }}
+          fetch-depth: 0  # 拉取完整git历史，避免commit异常
+
       - name: Run with setup-python 3.14
         uses: actions/setup-python@v6
         with:
           python-version: '3.14'
           update-environment: true
           cache: 'pipenv'
+
       - name: Install FFmpeg
         run: sudo apt-get update && sudo apt-get install -y ffmpeg
+
       - name: Install pipenv
-        run: pip3 install --user pipenv
+        run: |
+          pip3 install --user pipenv
+          echo "$HOME/.local/bin" >> $GITHUB_PATH  # 修复~/.local/bin不在PATH导致pipenv找不到
+
+      - name: Ensure output directory exist
+        run: mkdir -p output
+
       - name: Install dependencies
         run: pipenv --python 3.14 && pipenv install --deploy
+
       - name: Update
         run: pipenv run dev
+
+      - name: Debug‑Print generated files
+        run: |
+          ls -la
+          ls -la ./output || true
+
+      - name: Upload generated output as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: generated‑live‑files
+          path: ./output
+          if-no-files-found: warn
+
       - name: Commit and push if changed
         run: |
           git config --local user.email "github-actions[bot]@users.noreply.github.com"
@@ -45,5 +67,5 @@ jobs:
           git add .
           if ! git diff --staged --quiet; then
             git commit -m "Github Action Auto Updated"
-            git push
+            git push origin ${{ env.BRANCH_NAME }}
           fi
