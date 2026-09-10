@@ -1,13 +1,36 @@
-name: 'Update schedule'
+# =============================================================================
+# Update iptv直播源列表 - JunTV 仓库专用工作流
+# -----------------------------------------------------------------------------
+# 目标：让 JunTV（IPTV-API v3.x）在 GitHub Actions 中自动采集、测速并生成
+#       直播源文件，然后**提交到仓库 output/ 目录**（与 junitv 仓库的
+#       https://github.com/alantang1977/junitv/tree/main/output 效果一致），
+#       这样即可通过固定链接（如 raw.githubusercontent.com）直接播放。
+#
+# 相对 junitv 参考版 main.yml 的适配（依据 JunTV 仓库实际功能）：
+#   1. Python 版本：JunTV Pipfile 要求 3.14（junitv 为 3.13）
+#   2. JunTV 代码中不存在 open_driver / selenium，故移除 Chrome、chromedriver、
+#      selenium 安装相关步骤
+#   3. 采用 JunTV 自身 main.yml 的健壮性实践：permissions、fetch-depth: 0、
+#      pipenv 的 ~/.local/bin PATH 修复、mkdir -p output、Artifact 备份、
+#      git push 不使用 --force
+#   4. 关键新增：JunTV 的 .gitignore 默认忽略 /output/（官方只上传 Artifact），
+#      本工作流会在运行时移除该忽略规则，使生成的直播文件可被提交
+# =============================================================================
+name: 'Update iptv直播源列表'
+
 on:
-  # 保留手动触发按钮，可随时点击运行
-  workflow_dispatch:
-  # 定时自动更新：每周一、周四 UTC 00:00 执行（对应北京时间 08:00）
   schedule:
-    - cron: '0 0 * * 1,4'
+    - cron: '55 0 */2 * *'  # 每2天凌晨00点55分执行任务（UTC时间，对应北京时间08:55）
+  workflow_dispatch:
+    branches:
+      - main
+      - dev
+      - gd
+
 # 授予工作流仓库写入权限，确保能推送更新结果
 permissions:
   contents: write
+
 jobs:
   push:
     runs-on: ${{ matrix.operating-system }}
@@ -42,6 +65,13 @@ jobs:
       - name: Ensure output directory exist
         run: mkdir -p output
 
+      # JunTV 默认在 .gitignore 中忽略 /output/（官方只上传Artifact不提交）。
+      # 本工作流的目标是把直播源文件提交到仓库 output/ 目录（同 junitv），
+      # 因此移除该忽略规则（幂等：规则不存在时无任何影响），
+      # 首次运行会连同 .gitignore 的这次修改一并提交，后续运行恢复正常跟踪。
+      - name: Ensure output directory is tracked
+        run: sed -i '\#^/output/$#d' .gitignore
+
       - name: Install dependencies
         run: pipenv --python 3.14 && pipenv install --deploy
 
@@ -56,7 +86,7 @@ jobs:
       - name: Upload generated output as artifact
         uses: actions/upload-artifact@v4
         with:
-          name: generated‑live‑files
+          name: generated-live-files
           path: ./output
           if-no-files-found: warn
 
