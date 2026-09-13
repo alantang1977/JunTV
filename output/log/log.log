@@ -279,3 +279,106 @@
 2026-09-11T05:44:36+00:00 INFO    [run=c6547952e12d4e2e97c61b11416d695d phase=statistics event=statistics.finished] 频道统计完成：测试 3586，有效 890
 2026-09-11T05:44:36+00:00 INFO    [run=c6547952e12d4e2e97c61b11416d695d phase=complete event=run.summary] 更新摘要
 2026-09-11T05:44:36+00:00 INFO    [run=c6547952e12d4e2e97c61b11416d695d phase=complete event=run.finished] 更新完成！总耗时：22:52
+2026-09-13T05:27:15+00:00 INFO    [event=application.started] IPTV-API 版本: 3.0.0 (构建时间: 2026-08-07 11:45:59)
+2026-09-13T05:27:15+00:00 INFO    [phase=prepare event=network.ipv6.checking] 🛜 正在检查当前网络是否支持IPv6...
+2026-09-13T05:27:15+00:00 WARNING [phase=prepare event=network.ipv6.unsupported] 当前网络不支持IPv6，别担心，IPv6的结果会被保存下来
+2026-09-13T05:27:15+00:00 INFO    [run=4aebec3db83e40b88e74543c4d200e3d phase=prepare event=run.started] 性能模式: auto → balance，可用资源: 4.0 CPU / 15.61 GB，并发: 测速 8、媒体探测 2、源抓取 8
+2026-09-13T05:27:15+00:00 INFO    [run=4aebec3db83e40b88e74543c4d200e3d phase=prepare event=channels.catalog_loaded] 频道目录已加载：白名单 0，黑名单 2，台标 21
+2026-09-13T05:27:16+00:00 INFO    [run=4aebec3db83e40b88e74543c4d200e3d phase=fetch event=sources.subscribe.summary] 订阅源数量：50，订阅白名单数量：0，停用地址数量：19，有效总数量：49
+2026-09-13T05:27:16+00:00 INFO    [run=4aebec3db83e40b88e74543c4d200e3d phase=fetch event=progress.started] 正在进行获取订阅源  0/49
+2026-09-13T05:27:16+00:00 INFO    [run=4aebec3db83e40b88e74543c4d200e3d phase=fetch event=sources.epg.summary] EPG源数量：8，EPG白名单数量：0，停用地址数量：0，有效总数量：8
+2026-09-13T05:27:16+00:00 INFO    [run=4aebec3db83e40b88e74543c4d200e3d phase=fetch event=progress.started] 正在进行获取EPG源  0/8
+2026-09-13T05:27:17+00:00 INFO    [run=4aebec3db83e40b88e74543c4d200e3d phase=fetch event=epg.source_parsed] EPG 源解析完成：http://e.erw.cc/e.xml.gz，保留节目 5846 条
+2026-09-13T05:27:17+00:00 INFO    [run=4aebec3db83e40b88e74543c4d200e3d phase=fetch event=progress.updated] 正在进行获取EPG源  1/8 (12%)  剩余 7
+2026-09-13T05:27:17+00:00 WARNING [run=4aebec3db83e40b88e74543c4d200e3d phase=fetch event=request.retrying] 🔄 请求https://iptv.1989.click/playlist.m3u失败，正在进行第1次重试...
+2026-09-13T05:27:17+00:00 WARNING [run=4aebec3db83e40b88e74543c4d200e3d phase=fetch event=request.retrying] 🔄 请求https://feer-cdn-bp.xpnb.qzz.io/xnkl.txt失败，正在进行第1次重试...
+2026-09-13T05:27:17+00:00 INFO    [run=4aebec3db83e40b88e74543c4d200e3d phase=fetch event=progress.updated] 正在进行获取订阅源  1/49 (2%)  剩余 48
+2026-09-13T05:27:17+00:00 WARNING [run=4aebec3db83e40b88e74543c4d200e3d phase=fetch event=request.retrying] 🔄 请求http://iptv.4666888.xyz/FYTV.m3u失败，正在进行第1次重试...
+2026-09-13T05:27:18+00:00 WARNING [run=4aebec3db83e40b88e74543c4d200e3d phase=fetch event=source.request_failed] 订阅源请求失败：❌ 请求https://iptv.1989.click/playlist.m3u失败，已达到最大重试次数
+2026-09-13T05:27:18+00:00 WARNING [run=4aebec3db83e40b88e74543c4d200e3d phase=fetch event=source.request_failed] 订阅源请求失败：❌ 请求https://feer-cdn-bp.xpnb.qzz.io/xnkl.txt失败，已达到最大重试次数
+2026-09-13T05:27:18+00:00 INFO    [run=4aebec3db83e40b88e74543c4d200e3d phase=fetch event=progress.updated] 正在进行获取订阅源  6/49 (12%)  剩余 43
+2026-09-13T05:27:19+00:00 WARNING [run=4aebec3db83e40b88e74543c4d200e3d phase=fetch event=request.retrying] 🔄 请求http://103.236.75.89:588/psy.m3u失败，正在进行第1次重试...
+2026-09-13T05:27:19+00:00 INFO    [run=4aebec3db83e40b88e74543c4d200e3d phase=fetch event=progress.updated] 正在进行获取订阅源  11/49 (22%)  剩余 38
+2026-09-13T05:27:20+00:00 WARNING [run=4aebec3db83e40b88e74543c4d200e3d phase=fetch event=source.request_failed] 订阅源请求失败：❌ 请求http://103.236.75.89:588/psy.m3u失败，已达到最大重试次数
+2026-09-13T05:27:20+00:00 INFO    [run=4aebec3db83e40b88e74543c4d200e3d phase=fetch event=progress.updated] 正在进行获取订阅源  16/49 (32%)  剩余 33
+2026-09-13T05:27:22+00:00 INFO    [run=4aebec3db83e40b88e74543c4d200e3d phase=fetch event=progress.updated] 正在进行获取订阅源  21/49 (42%)  剩余 28
+2026-09-13T05:27:23+00:00 INFO    [run=4aebec3db83e40b88e74543c4d200e3d phase=fetch event=progress.updated] 正在进行获取订阅源  26/49 (53%)  剩余 23
+2026-09-13T05:27:24+00:00 INFO    [run=4aebec3db83e40b88e74543c4d200e3d phase=fetch event=progress.updated] 正在进行获取订阅源  31/49 (63%)  剩余 18
+2026-09-13T05:27:25+00:00 INFO    [run=4aebec3db83e40b88e74543c4d200e3d phase=fetch event=progress.updated] 正在进行获取订阅源  36/49 (73%)  剩余 13
+2026-09-13T05:27:26+00:00 INFO    [run=4aebec3db83e40b88e74543c4d200e3d phase=fetch event=progress.updated] 正在进行获取订阅源  41/49 (83%)  剩余 8
+2026-09-13T05:27:27+00:00 WARNING [run=4aebec3db83e40b88e74543c4d200e3d phase=fetch event=request.retrying] 🔄 请求https://live.445569.xyz/live.m3u失败，正在进行第1次重试...
+2026-09-13T05:27:28+00:00 WARNING [run=4aebec3db83e40b88e74543c4d200e3d phase=fetch event=source.request_failed] 订阅源请求失败：❌ 请求http://iptv.4666888.xyz/FYTV.m3u失败，已达到最大重试次数
+2026-09-13T05:27:28+00:00 INFO    [run=4aebec3db83e40b88e74543c4d200e3d phase=fetch event=progress.updated] 正在进行获取订阅源  46/49 (93%)  剩余 3
+2026-09-13T05:27:30+00:00 INFO    [run=4aebec3db83e40b88e74543c4d200e3d phase=fetch event=epg.source_parsed] EPG 源解析完成：https://gitee.com/taksssss/tv/raw/main/epg/erw.xml.gz，保留节目 8738 条
+2026-09-13T05:27:30+00:00 INFO    [run=4aebec3db83e40b88e74543c4d200e3d phase=fetch event=progress.updated] 正在进行获取EPG源  2/8 (25%)  剩余 6
+2026-09-13T05:27:32+00:00 INFO    [run=4aebec3db83e40b88e74543c4d200e3d phase=fetch event=epg.source_parsed] EPG 源解析完成：https://gitee.com/taksssss/tv/raw/main/epg/epgpw_cn.xml.gz，保留节目 16109 条
+2026-09-13T05:27:32+00:00 INFO    [run=4aebec3db83e40b88e74543c4d200e3d phase=fetch event=progress.updated] 正在进行获取EPG源  3/8 (37%)  剩余 5
+2026-09-13T05:27:35+00:00 INFO    [run=4aebec3db83e40b88e74543c4d200e3d phase=fetch event=epg.source_parsed] EPG 源解析完成：https://gitee.com/taksssss/tv/raw/main/epg/epgpw_hk.xml.gz，保留节目 9060 条
+2026-09-13T05:27:35+00:00 INFO    [run=4aebec3db83e40b88e74543c4d200e3d phase=fetch event=progress.updated] 正在进行获取EPG源  4/8 (50%)  剩余 4
+2026-09-13T05:27:39+00:00 WARNING [run=4aebec3db83e40b88e74543c4d200e3d phase=fetch event=source.request_failed] 订阅源请求失败：❌ 请求https://live.445569.xyz/live.m3u失败，已达到最大重试次数
+2026-09-13T05:27:39+00:00 INFO    [run=4aebec3db83e40b88e74543c4d200e3d phase=fetch event=progress.updated] 正在进行获取订阅源  49/49 (100%)  剩余 0
+2026-09-13T05:27:39+00:00 INFO    [run=4aebec3db83e40b88e74543c4d200e3d phase=fetch event=epg.source_parsed] EPG 源解析完成：https://gitee.com/taksssss/tv/raw/main/epg/epgpw_tw.xml.gz，保留节目 15483 条
+2026-09-13T05:27:39+00:00 INFO    [run=4aebec3db83e40b88e74543c4d200e3d phase=fetch event=progress.updated] 正在进行获取EPG源  5/8 (62%)  剩余 3
+2026-09-13T05:27:39+00:00 INFO    [run=4aebec3db83e40b88e74543c4d200e3d phase=fetch event=sources.subscribe.finished] 订阅源: ✅ 有效地址数量：49，⛔ 停用地址数量：0
+2026-09-13T05:27:39+00:00 INFO    [run=4aebec3db83e40b88e74543c4d200e3d phase=fetch event=progress.finished] 正在进行获取订阅源  49/49  未匹配 10000
+2026-09-13T05:27:41+00:00 INFO    [run=4aebec3db83e40b88e74543c4d200e3d phase=fetch event=epg.source_parsed] EPG 源解析完成：https://gitee.com/taksssss/tv/raw/main/epg/51zmt.xml.gz，保留节目 2421 条
+2026-09-13T05:27:41+00:00 INFO    [run=4aebec3db83e40b88e74543c4d200e3d phase=fetch event=progress.updated] 正在进行获取EPG源  6/8 (75%)  剩余 2
+2026-09-13T05:27:44+00:00 INFO    [run=4aebec3db83e40b88e74543c4d200e3d phase=fetch event=epg.source_parsed] EPG 源解析完成：https://gitee.com/taksssss/tv/raw/main/epg/51zmte1.xml.gz，保留节目 3626 条
+2026-09-13T05:27:44+00:00 INFO    [run=4aebec3db83e40b88e74543c4d200e3d phase=fetch event=progress.updated] 正在进行获取EPG源  7/8 (87%)  剩余 1
+2026-09-13T05:27:46+00:00 INFO    [run=4aebec3db83e40b88e74543c4d200e3d phase=fetch event=epg.source_parsed] EPG 源解析完成：https://gitee.com/taksssss/tv/raw/main/epg/51zmte2.xml.gz，保留节目 3442 条
+2026-09-13T05:27:46+00:00 INFO    [run=4aebec3db83e40b88e74543c4d200e3d phase=fetch event=progress.updated] 正在进行获取EPG源  8/8 (100%)  剩余 0
+2026-09-13T05:27:46+00:00 INFO    [run=4aebec3db83e40b88e74543c4d200e3d phase=fetch event=sources.epg.finished] EPG源: ✅ 有效地址数量：8，⛔ 停用地址数量：0
+2026-09-13T05:27:46+00:00 INFO    [run=4aebec3db83e40b88e74543c4d200e3d phase=fetch event=progress.finished] 正在进行获取EPG源  8/8  匹配 254 个频道
+2026-09-13T05:30:47+00:00 INFO    [run=4aebec3db83e40b88e74543c4d200e3d phase=aggregate event=channels.aggregated] 频道数据聚合完成：593 个频道，26971 个接口（IPv4 24606 / IPv6 2365）
+2026-09-13T05:30:48+00:00 INFO    [run=4aebec3db83e40b88e74543c4d200e3d phase=speed_test event=speed_test.planned] 总接口数量: 17698, 需要进行测速的接口数量: 16162
+2026-09-13T05:30:48+00:00 INFO    [run=4aebec3db83e40b88e74543c4d200e3d phase=speed_test event=progress.started] 测速  0/16162
+2026-09-13T05:30:51+00:00 INFO    [run=4aebec3db83e40b88e74543c4d200e3d phase=speed_test event=progress.updated] 测速  1/16162 (0%)  有效 1  失败 0  广州综合
+2026-09-13T05:31:21+00:00 INFO    [run=4aebec3db83e40b88e74543c4d200e3d phase=speed_test event=progress.updated] 测速  40/16162 (0%)  有效 19  失败 21  广州法治
+2026-09-13T05:31:51+00:00 INFO    [run=4aebec3db83e40b88e74543c4d200e3d phase=speed_test event=progress.updated] 测速  84/16162 (0%)  有效 25  失败 59  广州南国都市频道
+2026-09-13T05:32:21+00:00 INFO    [run=4aebec3db83e40b88e74543c4d200e3d phase=speed_test event=progress.updated] 测速  163/16162 (1%)  有效 51  失败 112  大湾区卫视
+2026-09-13T05:32:51+00:00 INFO    [run=4aebec3db83e40b88e74543c4d200e3d phase=speed_test event=progress.updated] 测速  230/16162 (1%)  有效 62  失败 168  佛山综合
+2026-09-13T05:33:21+00:00 INFO    [run=4aebec3db83e40b88e74543c4d200e3d phase=speed_test event=progress.updated] 测速  294/16162 (1%)  有效 69  失败 225  汕头经济
+2026-09-13T05:33:53+00:00 INFO    [run=4aebec3db83e40b88e74543c4d200e3d phase=speed_test event=progress.updated] 测速  345/16162 (2%)  有效 69  失败 276  茂名综合
+2026-09-13T05:34:23+00:00 INFO    [run=4aebec3db83e40b88e74543c4d200e3d phase=speed_test event=progress.updated] 测速  435/16162 (2%)  有效 103  失败 332  CCTV-04咪咕
+2026-09-13T05:34:54+00:00 INFO    [run=4aebec3db83e40b88e74543c4d200e3d phase=speed_test event=progress.updated] 测速  547/16162 (3%)  有效 170  失败 377  CCTV-17咪咕
+2026-09-13T05:35:24+00:00 INFO    [run=4aebec3db83e40b88e74543c4d200e3d phase=speed_test event=progress.updated] 测速  623/16162 (3%)  有效 175  失败 448  CCTV4美洲咪咕
+2026-09-13T05:35:54+00:00 INFO    [run=4aebec3db83e40b88e74543c4d200e3d phase=speed_test event=progress.updated] 测速  720/16162 (4%)  有效 215  失败 505  江西卫视咪咕
+2026-09-13T05:36:24+00:00 INFO    [run=4aebec3db83e40b88e74543c4d200e3d phase=speed_test event=progress.updated] 测速  847/16162 (5%)  有效 282  失败 565  甘肃卫视
+2026-09-13T05:36:55+00:00 INFO    [run=4aebec3db83e40b88e74543c4d200e3d phase=speed_test event=progress.updated] 测速  990/16162 (6%)  有效 385  失败 605  天津卫视
+2026-09-13T05:37:26+00:00 INFO    [run=4aebec3db83e40b88e74543c4d200e3d phase=speed_test event=progress.updated] 测速  1090/16162 (6%)  有效 393  失败 697  凤凰香港
+2026-09-13T05:37:56+00:00 INFO    [run=4aebec3db83e40b88e74543c4d200e3d phase=speed_test event=progress.updated] 测速  1173/16162 (7%)  有效 411  失败 762  公视
+2026-09-13T05:38:26+00:00 INFO    [run=4aebec3db83e40b88e74543c4d200e3d phase=speed_test event=progress.updated] 测速  1261/16162 (7%)  有效 427  失败 834  tvbs
+2026-09-13T05:38:56+00:00 INFO    [run=4aebec3db83e40b88e74543c4d200e3d phase=speed_test event=progress.updated] 测速  1379/16162 (8%)  有效 435  失败 944  無線新聞台
+2026-09-13T05:39:26+00:00 INFO    [run=4aebec3db83e40b88e74543c4d200e3d phase=speed_test event=progress.updated] 测速  1459/16162 (9%)  有效 450  失败 1009  TVB星河
+2026-09-13T05:39:56+00:00 INFO    [run=4aebec3db83e40b88e74543c4d200e3d phase=speed_test event=progress.updated] 测速  1554/16162 (9%)  有效 456  失败 1098  TVB Plus
+2026-09-13T05:40:26+00:00 INFO    [run=4aebec3db83e40b88e74543c4d200e3d phase=speed_test event=progress.updated] 测速  1647/16162 (10%)  有效 465  失败 1182  Hbo原创台
+2026-09-13T05:40:58+00:00 INFO    [run=4aebec3db83e40b88e74543c4d200e3d phase=speed_test event=progress.updated] 测速  1732/16162 (10%)  有效 471  失败 1261  中天亞洲台
+2026-09-13T05:41:28+00:00 INFO    [run=4aebec3db83e40b88e74543c4d200e3d phase=speed_test event=progress.updated] 测速  1822/16162 (11%)  有效 483  失败 1339  BBC NEWS
+2026-09-13T05:41:58+00:00 INFO    [run=4aebec3db83e40b88e74543c4d200e3d phase=speed_test event=progress.updated] 测速  1940/16162 (12%)  有效 506  失败 1434  三立戏剧台
+2026-09-13T05:42:28+00:00 INFO    [run=4aebec3db83e40b88e74543c4d200e3d phase=speed_test event=progress.updated] 测速  2063/16162 (12%)  有效 513  失败 1550  大爱2台
+2026-09-13T05:42:59+00:00 INFO    [run=4aebec3db83e40b88e74543c4d200e3d phase=speed_test event=progress.updated] 测速  2145/16162 (13%)  有效 525  失败 1620  浙江少儿
+2026-09-13T05:43:29+00:00 INFO    [run=4aebec3db83e40b88e74543c4d200e3d phase=speed_test event=progress.updated] 测速  2206/16162 (13%)  有效 533  失败 1673  浙江国际
+2026-09-13T05:44:01+00:00 INFO    [run=4aebec3db83e40b88e74543c4d200e3d phase=speed_test event=progress.updated] 测速  2259/16162 (13%)  有效 542  失败 1717  萧山生活
+2026-09-13T05:44:31+00:00 INFO    [run=4aebec3db83e40b88e74543c4d200e3d phase=speed_test event=progress.updated] 测速  2295/16162 (14%)  有效 544  失败 1751  武义新闻综合
+2026-09-13T05:45:01+00:00 INFO    [run=4aebec3db83e40b88e74543c4d200e3d phase=speed_test event=progress.updated] 测速  2328/16162 (14%)  有效 544  失败 1784  嵊泗综合
+2026-09-13T05:45:31+00:00 INFO    [run=4aebec3db83e40b88e74543c4d200e3d phase=speed_test event=progress.updated] 测速  2367/16162 (14%)  有效 549  失败 1818  北京卡酷少儿
+2026-09-13T05:46:03+00:00 INFO    [run=4aebec3db83e40b88e74543c4d200e3d phase=speed_test event=progress.updated] 测速  2430/16162 (15%)  有效 562  失败 1868  上海教育
+2026-09-13T05:46:33+00:00 INFO    [run=4aebec3db83e40b88e74543c4d200e3d phase=speed_test event=progress.updated] 测速  2526/16162 (15%)  有效 583  失败 1943  动漫秀场
+2026-09-13T05:47:04+00:00 INFO    [run=4aebec3db83e40b88e74543c4d200e3d phase=speed_test event=progress.updated] 测速  2617/16162 (16%)  有效 619  失败 1998  万州综合
+2026-09-13T05:47:34+00:00 INFO    [run=4aebec3db83e40b88e74543c4d200e3d phase=speed_test event=progress.updated] 测速  2699/16162 (16%)  有效 637  失败 2062  靖天映画
+2026-09-13T05:48:04+00:00 INFO    [run=4aebec3db83e40b88e74543c4d200e3d phase=speed_test event=progress.updated] 测速  2789/16162 (17%)  有效 640  失败 2149  天映经典
+2026-09-13T05:48:35+00:00 INFO    [run=4aebec3db83e40b88e74543c4d200e3d phase=speed_test event=progress.updated] 测速  2922/16162 (18%)  有效 701  失败 2221  电视指南
+2026-09-13T05:49:05+00:00 INFO    [run=4aebec3db83e40b88e74543c4d200e3d phase=speed_test event=progress.updated] 测速  2983/16162 (18%)  有效 705  失败 2278  世界地理
+2026-09-13T05:49:35+00:00 INFO    [run=4aebec3db83e40b88e74543c4d200e3d phase=speed_test event=progress.updated] 测速  3035/16162 (18%)  有效 712  失败 2323  咪咕直播17
+2026-09-13T05:50:07+00:00 INFO    [run=4aebec3db83e40b88e74543c4d200e3d phase=speed_test event=progress.updated] 测速  3096/16162 (19%)  有效 718  失败 2378  爱体育
+2026-09-13T05:50:37+00:00 INFO    [run=4aebec3db83e40b88e74543c4d200e3d phase=speed_test event=progress.updated] 测速  3174/16162 (19%)  有效 724  失败 2450  精品体育
+2026-09-13T05:51:07+00:00 INFO    [run=4aebec3db83e40b88e74543c4d200e3d phase=speed_test event=progress.updated] 测速  3244/16162 (20%)  有效 732  失败 2512  睛彩篮球
+2026-09-13T05:51:38+00:00 INFO    [run=4aebec3db83e40b88e74543c4d200e3d phase=speed_test event=progress.updated] 测速  3298/16162 (20%)  有效 734  失败 2564  魅力足球
+2026-09-13T05:52:08+00:00 INFO    [run=4aebec3db83e40b88e74543c4d200e3d phase=speed_test event=progress.updated] 测速  3381/16162 (20%)  有效 748  失败 2633  新动漫
+2026-09-13T05:52:38+00:00 INFO    [run=4aebec3db83e40b88e74543c4d200e3d phase=speed_test event=progress.updated] 测速  3456/16162 (21%)  有效 762  失败 2694  音乐广播
+2026-09-13T05:52:57+00:00 INFO    [run=4aebec3db83e40b88e74543c4d200e3d phase=speed_test event=speed_test.artifacts_written] 测速明细已写入 output/log/speed_test.log，有效结果已写入 output/log/result.log
+2026-09-13T05:52:57+00:00 INFO    [run=4aebec3db83e40b88e74543c4d200e3d phase=speed_test event=progress.finished] 测速  16162/16162  有效 773  失败 2737
+2026-09-13T05:52:58+00:00 INFO    [run=4aebec3db83e40b88e74543c4d200e3d phase=output event=output.written] 结果文件生成完成：更新 3 个文件
+2026-09-13T05:53:00+00:00 INFO    [run=4aebec3db83e40b88e74543c4d200e3d phase=statistics event=statistics.finished] 频道统计完成：测试 3510，有效 773
+2026-09-13T05:53:00+00:00 INFO    [run=4aebec3db83e40b88e74543c4d200e3d phase=complete event=run.summary] 更新摘要
+2026-09-13T05:53:00+00:00 INFO    [run=4aebec3db83e40b88e74543c4d200e3d phase=complete event=run.finished] 更新完成！总耗时：25:44
