@@ -2,19 +2,24 @@
 # Update iptv直播源列表 - JunTV 仓库专用工作流
 # -----------------------------------------------------------------------------
 # 目标：让 JunTV（IPTV-API v3.x）在 GitHub Actions 中自动采集、测速并生成
-#       直播源文件，然后**提交到仓库 output/ 目录**（与 junitv 仓库的
-#       https://github.com/alantang1977/junitv/tree/main/output 效果一致），
+#       直播源文件，然后**提交到仓库 output/ 目录**，
 #       这样即可通过固定链接（如 raw.githubusercontent.com）直接播放。
 #
-# 相对 junitv 参考版 main.yml 的适配（依据 JunTV 仓库实际功能）：
-#   1. Python 版本：JunTV Pipfile 要求 3.14（junitv 为 3.13）
-#   2. JunTV 代码中不存在 open_driver / selenium，故移除 Chrome、chromedriver、
-#      selenium 安装相关步骤
-#   3. 采用 JunTV 自身 main.yml 的健壮性实践：permissions、fetch-depth: 0、
-#      pipenv 的 ~/.local/bin PATH 修复、mkdir -p output、Artifact 备份、
-#      git push 不使用 --force
-#   4. 关键新增：JunTV 的 .gitignore 默认忽略 /output/（官方只上传 Artifact），
-#      本工作流会在运行时移除该忽略规则，使生成的直播文件可被提交
+# 相对原始版本的健壮性改进：
+#   1. Python 3.14（JunTV Pipfile 要求）
+#   2. JunTV 代码中无 open_driver / selenium，故不装 Chrome/chromedriver/selenium
+#   3. permissions: contents: write、fetch-depth: 0、pipenv 的 ~/.local/bin PATH
+#      修复、mkdir -p output、Artifact 备份、git push 不使用 --force
+#   4. 运行时移除 .gitignore 中对 /output/ 的忽略规则，使生成文件可被提交
+#
+# 本次新增修复（对应 Actions #868 的失败）：
+#   A. push 前先 `git pull --rebase --autostash`：运行一次约 25 分钟，期间若
+#      main 被人手动推送过（本次就是手动提交 ad19bdc "Update subscribe.txt"
+#      导致远端超前），不再因 non-fast-forward 被拒，而是把自动提交变基到
+#      远端最新之上再推送（fast-forward）。
+#   B. 提交前还原 config/subscribe.txt：该文件是你手动维护的源订阅列表，
+#      bot 运行时虽会改写它，但**不再把它的改动提交进去**，从而保留你的
+#      手动编辑，也避免与 bot 的自动提交互相冲突。
 # =============================================================================
 name: 'Update iptv直播源列表'
 
@@ -66,9 +71,8 @@ jobs:
         run: mkdir -p output
 
       # JunTV 默认在 .gitignore 中忽略 /output/（官方只上传Artifact不提交）。
-      # 本工作流的目标是把直播源文件提交到仓库 output/ 目录（同 junitv），
-      # 因此移除该忽略规则（幂等：规则不存在时无任何影响），
-      # 首次运行会连同 .gitignore 的这次修改一并提交，后续运行恢复正常跟踪。
+      # 本工作流的目标是把直播源文件提交到仓库 output/ 目录，
+      # 因此移除该忽略规则（幂等：规则不存在时无任何影响）。
       - name: Ensure output directory is tracked
         run: sed -i '\#^/output/$#d' .gitignore
 
@@ -92,10 +96,20 @@ jobs:
 
       - name: Commit and push if changed
         run: |
+          set -x
           git config --local user.email "github-actions[bot]@users.noreply.github.com"
           git config --local user.name "github-actions[bot]"
+
+          # [修复B] config/subscribe.txt 是手动维护的源订阅列表。
+          # bot 运行时可能改写它，但这里把它还原成仓库里已提交的版本，
+          # 不纳入本次自动提交，从而保留手动编辑、避免冲突。
+          git restore config/subscribe.txt 2>/dev/null || true
+
           git add .
           if ! git diff --staged --quiet; then
             git commit -m "Github Action Auto Updated"
-            git push origin ${{ env.BRANCH_NAME }}
+            # [修复A] 运行期间 main 可能已被手动推送（约25分钟窗口），
+            # 先变基到远端最新，再以 fast-forward 推送，避免 non-fast-forward 被拒。
+            git pull --rebase --autostash origin "${{ env.BRANCH_NAME }}"
+            git push origin "${{ env.BRANCH_NAME }}"
           fi
