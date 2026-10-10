@@ -2,3 +2,11 @@ dist
 build
 .idea
 __pycache__/
+
+# JunTV 运行时数据目录：测速 SQLite 数据库（channel_results.db 实测可达 102MB，
+# 超过 GitHub 单文件 100MB 硬上限，会触发 GH001 拒收）、rtmp.db、
+# cache.gz / frozen.gz / run_state.json 等均为每次运行重新生成的本地状态，禁止入库。
+output/data/
+# 运行时视频截图，体积大且不属于要发布的直播源产物
+output/screenshots/
+
