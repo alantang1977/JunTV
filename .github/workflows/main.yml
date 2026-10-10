@@ -5,24 +5,28 @@
 #       直播源文件，然后**提交到仓库 output/ 目录**，
 #       这样即可通过固定链接（如 raw.githubusercontent.com）直接播放。
 #
-# 相对原始版本的健壮性改进：
+# 健壮性改进：
 #   1. Python 3.14（JunTV Pipfile 要求）
 #   2. JunTV 代码中无 open_driver / selenium，故不装 Chrome/chromedriver/selenium
 #   3. permissions: contents: write、fetch-depth: 0、pipenv 的 ~/.local/bin PATH
 #      修复、mkdir -p output、Artifact 备份、git push 不使用 --force
 #   4. 运行时移除 .gitignore 中对 /output/ 的忽略规则，使生成文件可被提交
 #
-# 本次新增修复（对应 Actions #868 的失败）：
+# 已修复的问题：
 #   A. push 前先 `git pull --rebase --autostash`：运行一次约 25 分钟，期间若
-#      main 被人手动推送过（本次就是手动提交 ad19bdc "Update subscribe.txt"
-#      导致远端超前），不再因 non-fast-forward 被拒，而是把自动提交变基到
+#      main 被手动推送过，不再因 non-fast-forward 被拒，而是把自动提交变基到
 #      远端最新之上再推送（fast-forward）。
-#   B. 提交前还原 config/subscribe.txt：该文件是你手动维护的源订阅列表，
-#      bot 运行时虽会改写它，但**不再把它的改动提交进去**，从而保留你的
-#      手动编辑，也避免与 bot 的自动提交互相冲突。
-#   C. 忽略 output/data/（对应第二次失败）：测速数据库 channel_results.db
-#      达 102.76 MB，超过 GitHub 100 MB 单文件上限被 GH001 拒收，
-#      运行时把 output/data/ 写进 .gitignore，只提交直播源产物。
+#   B. 提交前还原 config/subscribe.txt：该文件是手动维护的源订阅列表，
+#      bot 运行时虽会改写它，但不把它的改动提交进去，保留手动编辑、避免冲突。
+#   C. 忽略并取消跟踪 output/data/：测速数据库 channel_results.db 已被跟踪
+#      入库（约 96MB），每次重新生成涨到 ~102MB，超过 GitHub 100MB 单文件
+#      上限被 GH001 拒收。.gitignore 对“已跟踪文件”无效，因此必须
+#      `git rm -r --cached` 把它从索引中移除（只删索引，保留工作区文件）。
+#      output/data/ 下还有 rtmp.db、cache.gz、frozen.gz、run_state.json 等
+#      同类运行时状态，整个目录一并忽略。
+#   D. 兜底大文件保险：提交前扫描暂存区，任何 >= 95MiB 的单文件一律移出
+#      暂存区并自动写入 .gitignore，防止今后其他产物（日志、截图、新数据库
+#      等）再次触发 GH001。
 # =============================================================================
 name: 'Update iptv直播源列表'
 
@@ -73,16 +77,18 @@ jobs:
       - name: Ensure output directory exist
         run: mkdir -p output
 
-      # JunTV 默认在 .gitignore 中忽略 /output/（官方只上传Artifact不提交）。
-      # 本工作流的目标是把直播源文件提交到仓库 output/ 目录，
-      # 因此移除该忽略规则（幂等：规则不存在时无任何影响）。
-      # 另外：output/data/ 是运行时测速数据库（channel_results.db，实测
-      # 102.76 MB，超过 GitHub 单文件 100 MB 硬上限，push 会被 GH001 拒绝），
-      # 这里永久忽略它，只提交真正的直播源产物。
+      # JunTV 上游默认在 .gitignore 中忽略 /output/（官方只上传 Artifact 不提交）。
+      # 本工作流需要把直播源文件提交到 output/，因此移除该忽略规则（幂等）。
+      # 同时永久忽略运行时数据目录与截图目录：
+      #   - output/data/ 下的 channel_results.db（测速 SQLite）实测可达 102MB，
+      #     超过 GitHub 单文件 100MB 硬上限，push 会被 GH001 拒绝；
+      #     rtmp.db / cache.gz / frozen.gz / run_state.json 同为可再生的本地状态。
+      #   - output/screenshots/ 是运行时视频截图，体积大且不是要发布的直播源。
       - name: Ensure output directory is tracked
         run: |
           sed -i '\#^/output/$#d' .gitignore
           grep -qxF 'output/data/' .gitignore || echo 'output/data/' >> .gitignore
+          grep -qxF 'output/screenshots/' .gitignore || echo 'output/screenshots/' >> .gitignore
 
       - name: Install dependencies
         run: pipenv --python 3.14 && pipenv install --deploy
@@ -109,20 +115,39 @@ jobs:
           git config --local user.name "github-actions[bot]"
 
           # [修复B] config/subscribe.txt 是手动维护的源订阅列表。
-          # bot 运行时可能改写它，但这里把它还原成仓库里已提交的版本，
+          # bot 运行时可能改写它，但还原成仓库里已提交的版本，
           # 不纳入本次自动提交，从而保留手动编辑、避免冲突。
           git restore config/subscribe.txt 2>/dev/null || true
 
-          # [修复C] output/data/channel_results.db 早已被 git 跟踪入库（约92MB），
-          # 每次重新生成会涨到 ~102MB，超过 GitHub 100MB 单文件上限，被 GH001 拒收。
-          # .gitignore 对已跟踪文件无效，因此必须：
-          #   1) 写入 .gitignore 永久忽略；
-          #   2) git rm --cached 把它从跟踪中移除（只删索引，保留工作区文件）。
-          # 本次提交只包含"删除该 db"，不引入新的超大 blob，push 即可通过。
+          # [修复C] output/data/ 下的 channel_results.db 等是运行时状态文件，
+          # 其中 channel_results.db 已被跟踪（约96MB），重新生成后达 ~102MB，
+          # 超过 GitHub 100MB 单文件上限，被 GH001 拒收。
+          # .gitignore 对已跟踪文件无效，必须 git rm --cached 把它们移出索引
+          # （-f 容忍工作区文件已被重新生成的情况；只删索引、不删工作区文件）。
+          # 首次运行会提交“删除这些文件”，之后因已忽略且未跟踪而成为空操作。
           grep -qxF 'output/data/' .gitignore || echo 'output/data/' >> .gitignore
-          git rm -r --cached output/data/ 2>/dev/null || true
+          git rm -r --cached -f output/data/ 2>/dev/null || true
+          grep -qxF 'output/screenshots/' .gitignore || echo 'output/screenshots/' >> .gitignore
+          git rm -r --cached -f output/screenshots/ 2>/dev/null || true
 
           git add .
+
+          # [修复D] 兜底保险：扫描暂存区中新增/修改的文件，任何 >= 95MiB 的
+          # 单文件都移出暂存区并把其路径写入 .gitignore，确保无论哪个产物
+          # 膨胀（日志、截图、新的数据库等）都不会再触发 GH001。
+          size_limit=$((95 * 1024 * 1024))
+          git diff --cached --name-only --diff-filter=AM -z | while IFS= read -r -d '' f; do
+            if [ -f "$f" ]; then
+              sz=$(wc -c < "$f")
+              if [ "$sz" -gt "$size_limit" ]; then
+                echo "::warning file=${f}::unstaging oversized file (${sz} bytes); GitHub hard limit is 100 MiB"
+                grep -qxF "$f" .gitignore || printf '\n# auto-added by CI: file exceeds GitHub 100 MiB limit\n%s\n' "$f" >> .gitignore
+                git rm --cached -f -- "$f"
+              fi
+            fi
+          done
+          git add .gitignore
+
           if ! git diff --staged --quiet; then
             git commit -m "Github Action Auto Updated"
             # [修复A] 运行期间 main 可能已被手动推送（约25分钟窗口），
