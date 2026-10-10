@@ -113,6 +113,15 @@ jobs:
           # 不纳入本次自动提交，从而保留手动编辑、避免冲突。
           git restore config/subscribe.txt 2>/dev/null || true
 
+          # [修复C] output/data/channel_results.db 早已被 git 跟踪入库（约92MB），
+          # 每次重新生成会涨到 ~102MB，超过 GitHub 100MB 单文件上限，被 GH001 拒收。
+          # .gitignore 对已跟踪文件无效，因此必须：
+          #   1) 写入 .gitignore 永久忽略；
+          #   2) git rm --cached 把它从跟踪中移除（只删索引，保留工作区文件）。
+          # 本次提交只包含"删除该 db"，不引入新的超大 blob，push 即可通过。
+          grep -qxF 'output/data/' .gitignore || echo 'output/data/' >> .gitignore
+          git rm -r --cached output/data/ 2>/dev/null || true
+
           git add .
           if ! git diff --staged --quiet; then
             git commit -m "Github Action Auto Updated"
