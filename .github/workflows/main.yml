@@ -20,6 +20,9 @@
 #   B. 提交前还原 config/subscribe.txt：该文件是你手动维护的源订阅列表，
 #      bot 运行时虽会改写它，但**不再把它的改动提交进去**，从而保留你的
 #      手动编辑，也避免与 bot 的自动提交互相冲突。
+#   C. 忽略 output/data/（对应第二次失败）：测速数据库 channel_results.db
+#      达 102.76 MB，超过 GitHub 100 MB 单文件上限被 GH001 拒收，
+#      运行时把 output/data/ 写进 .gitignore，只提交直播源产物。
 # =============================================================================
 name: 'Update iptv直播源列表'
 
@@ -73,8 +76,13 @@ jobs:
       # JunTV 默认在 .gitignore 中忽略 /output/（官方只上传Artifact不提交）。
       # 本工作流的目标是把直播源文件提交到仓库 output/ 目录，
       # 因此移除该忽略规则（幂等：规则不存在时无任何影响）。
+      # 另外：output/data/ 是运行时测速数据库（channel_results.db，实测
+      # 102.76 MB，超过 GitHub 单文件 100 MB 硬上限，push 会被 GH001 拒绝），
+      # 这里永久忽略它，只提交真正的直播源产物。
       - name: Ensure output directory is tracked
-        run: sed -i '\#^/output/$#d' .gitignore
+        run: |
+          sed -i '\#^/output/$#d' .gitignore
+          grep -qxF 'output/data/' .gitignore || echo 'output/data/' >> .gitignore
 
       - name: Install dependencies
         run: pipenv --python 3.14 && pipenv install --deploy
