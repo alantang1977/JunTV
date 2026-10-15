@@ -1,0 +1,178 @@
+#EXTM3U url-tvg="https://epg.zsdc.eu.org/t.xml.gz,https://epg.pw/xmltv/epg_CN.xml.gz" x-tvg-url="https://epg.zsdc.eu.org/t.xml.gz"
+#EXT-X-APTV-PREVIEW: FALSE
+#EXT-X-APTV-LATENCY: FALSE
+#EXT-X-APTV-LOGO: FALSE
+#EXTINF:-1 tvg-id="CCTV1" tvg-name="CCTV-1 综合" tvg-logo="https://garysclub.sharewithyou.dpdns.org/logos/ysp-live-logos/cctv1.png" group-title="央视" catchup="append" catchup-days="7" catchup-source="?playseek=${(b)yyyyMMddHHmmss}-${(e)yyyyMMddHHmmss}",CCTV-1 综合
+http://145.239.65.118:20178/cctv1.m3u8
+#EXTINF:-1 tvg-id="CCTV2" tvg-name="CCTV-2 财经" tvg-logo="https://garysclub.sharewithyou.dpdns.org/logos/ysp-live-logos/cctv2.png" group-title="央视" catchup="append" catchup-days="7" catchup-source="?playseek=${(b)yyyyMMddHHmmss}-${(e)yyyyMMddHHmmss}",CCTV-2 财经
+http://145.239.65.118:20178/cctv2.m3u8
+#EXTINF:-1 tvg-id="CCTV3" tvg-name="CCTV-3 综艺" tvg-logo="https://garysclub.sharewithyou.dpdns.org/logos/ysp-live-logos/cctv3.png" group-title="央视" catchup="append" catchup-days="7" catchup-source="?playseek=${(b)yyyyMMddHHmmss}-${(e)yyyyMMddHHmmss}",CCTV-3 综艺
+http://145.239.65.118:20178/cctv3.m3u8
+#EXTINF:-1 tvg-id="CCTV4" tvg-name="CCTV-4 中文国际" tvg-logo="https://garysclub.sharewithyou.dpdns.org/logos/ysp-live-logos/cctv4.png" group-title="央视" catchup="append" catchup-days="7" catchup-source="?playseek=${(b)yyyyMMddHHmmss}-${(e)yyyyMMddHHmmss}",CCTV-4 中文国际
+http://145.239.65.118:20178/cctv4.m3u8
+#EXTINF:-1 tvg-id="CCTV5" tvg-name="CCTV-5 体育" tvg-logo="https://garysclub.sharewithyou.dpdns.org/logos/ysp-live-logos/cctv5.png" group-title="央视" catchup="append" catchup-days="7" catchup-source="?playseek=${(b)yyyyMMddHHmmss}-${(e)yyyyMMddHHmmss}",CCTV-5 体育
+http://145.239.65.118:20178/cctv5.m3u8
+#EXTINF:-1 tvg-id="CCTV5+" tvg-name="CCTV-5+ 体育赛事" tvg-logo="https://garysclub.sharewithyou.dpdns.org/logos/ysp-live-logos/cctv5p.png" group-title="央视" catchup="append" catchup-days="7" catchup-source="?playseek=${(b)yyyyMMddHHmmss}-${(e)yyyyMMddHHmmss}",CCTV-5+ 体育赛事
+http://145.239.65.118:20178/cctv5p.m3u8
+#EXTINF:-1 tvg-id="CCTV6" tvg-name="CCTV-6 电影" tvg-logo="https://garysclub.sharewithyou.dpdns.org/logos/ysp-live-logos/cctv6.png" group-title="央视" catchup="append" catchup-days="7" catchup-source="?playseek=${(b)yyyyMMddHHmmss}-${(e)yyyyMMddHHmmss}",CCTV-6 电影
+http://145.239.65.118:20178/cctv6.m3u8
+#EXTINF:-1 tvg-id="CCTV7" tvg-name="CCTV-7 国防军事" tvg-logo="https://garysclub.sharewithyou.dpdns.org/logos/ysp-live-logos/cctv7.png" group-title="央视" catchup="append" catchup-days="7" catchup-source="?playseek=${(b)yyyyMMddHHmmss}-${(e)yyyyMMddHHmmss}",CCTV-7 国防军事
+http://145.239.65.118:20178/cctv7.m3u8
+#EXTINF:-1 tvg-id="CCTV8" tvg-name="CCTV-8 电视剧" tvg-logo="https://garysclub.sharewithyou.dpdns.org/logos/ysp-live-logos/cctv8.png" group-title="央视" catchup="append" catchup-days="7" catchup-source="?playseek=${(b)yyyyMMddHHmmss}-${(e)yyyyMMddHHmmss}",CCTV-8 电视剧
+http://145.239.65.118:20178/cctv8.m3u8
+#EXTINF:-1 tvg-id="CCTV9" tvg-name="CCTV-9 纪录" tvg-logo="https://garysclub.sharewithyou.dpdns.org/logos/ysp-live-logos/cctv9.png" group-title="央视" catchup="append" catchup-days="7" catchup-source="?playseek=${(b)yyyyMMddHHmmss}-${(e)yyyyMMddHHmmss}",CCTV-9 纪录
+http://145.239.65.118:20178/cctv9.m3u8
+#EXTINF:-1 tvg-id="CCTV10" tvg-name="CCTV-10 科教" tvg-logo="https://garysclub.sharewithyou.dpdns.org/logos/ysp-live-logos/cctv10.png" group-title="央视" catchup="append" catchup-days="7" catchup-source="?playseek=${(b)yyyyMMddHHmmss}-${(e)yyyyMMddHHmmss}",CCTV-10 科教
+http://145.239.65.118:20178/cctv10.m3u8
+#EXTINF:-1 tvg-id="CCTV11" tvg-name="CCTV-11 戏曲" tvg-logo="https://garysclub.sharewithyou.dpdns.org/logos/ysp-live-logos/cctv11.png" group-title="央视",CCTV-11 戏曲
+http://145.239.65.118:20178/cctv11.m3u8
+#EXTINF:-1 tvg-id="CCTV12" tvg-name="CCTV-12 社会与法" tvg-logo="https://garysclub.sharewithyou.dpdns.org/logos/ysp-live-logos/cctv12.png" group-title="央视",CCTV-12 社会与法
+http://145.239.65.118:20178/cctv12.m3u8
+#EXTINF:-1 tvg-id="CCTV13" tvg-name="CCTV-13 新闻" tvg-logo="https://garysclub.sharewithyou.dpdns.org/logos/ysp-live-logos/cctv13.png" group-title="央视" catchup="append" catchup-days="7" catchup-source="?playseek=${(b)yyyyMMddHHmmss}-${(e)yyyyMMddHHmmss}",CCTV-13 新闻
+http://145.239.65.118:20178/cctv13.m3u8
+#EXTINF:-1 tvg-id="CCTV14" tvg-name="CCTV-14 少儿" tvg-logo="https://garysclub.sharewithyou.dpdns.org/logos/ysp-live-logos/cctv14.png" group-title="央视",CCTV-14 少儿
+http://145.239.65.118:20178/cctv14.m3u8
+#EXTINF:-1 tvg-id="CCTV15" tvg-name="CCTV-15 音乐" tvg-logo="https://garysclub.sharewithyou.dpdns.org/logos/ysp-live-logos/cctv15.png" group-title="央视",CCTV-15 音乐
+http://145.239.65.118:20178/cctv15.m3u8
+#EXTINF:-1 tvg-id="CCTV16" tvg-name="CCTV-16 奥林匹克" tvg-logo="https://garysclub.sharewithyou.dpdns.org/logos/ysp-live-logos/cctv16.png" group-title="央视",CCTV-16 奥林匹克
+http://145.239.65.118:20178/cctv16.m3u8
+#EXTINF:-1 tvg-id="CCTV16" tvg-name="CCTV-16 4K" tvg-logo="https://garysclub.sharewithyou.dpdns.org/logos/ysp-live-logos/cctv164k.png" group-title="央视",CCTV-16 4K
+http://145.239.65.118:20178/cctv164k.m3u8
+#EXTINF:-1 tvg-id="CCTV17" tvg-name="CCTV-17 农业农村" tvg-logo="https://garysclub.sharewithyou.dpdns.org/logos/ysp-live-logos/cctv17.png" group-title="央视",CCTV-17 农业农村
+http://145.239.65.118:20178/cctv17.m3u8
+#EXTINF:-1 tvg-id="CCTV4K" tvg-name="CCTV-4K 超高清" tvg-logo="https://garysclub.sharewithyou.dpdns.org/logos/ysp-live-logos/cctv4k.png" group-title="央视",CCTV-4K 超高清
+http://145.239.65.118:20178/cctv4k.m3u8
+#EXTINF:-1 tvg-id="CCTV-8K" tvg-name="CCTV-8K 超高清" tvg-logo="https://garysclub.sharewithyou.dpdns.org/logos/ysp-live-logos/cctv8k.png" group-title="央视" catchup="append" catchup-days="7" catchup-source="?playseek=${(b)yyyyMMddHHmmss}-${(e)yyyyMMddHHmmss}",CCTV-8K 超高清
+http://145.239.65.118:20178/cctv8k.m3u8
+#EXTINF:-1 tvg-id="CGTN英语" tvg-name="CGTN" tvg-logo="https://garysclub.sharewithyou.dpdns.org/logos/ysp-live-logos/cgtn.png" group-title="央视" catchup="append" catchup-days="7" catchup-source="?playseek=${(b)yyyyMMddHHmmss}-${(e)yyyyMMddHHmmss}",CGTN
+http://145.239.65.118:20178/cgtn.m3u8
+#EXTINF:-1 tvg-id="CGTN法语" tvg-name="CGTN 法语" tvg-logo="https://garysclub.sharewithyou.dpdns.org/logos/ysp-live-logos/cgtnfr.png" group-title="央视" catchup="append" catchup-days="7" catchup-source="?playseek=${(b)yyyyMMddHHmmss}-${(e)yyyyMMddHHmmss}",CGTN 法语
+http://145.239.65.118:20178/cgtnfr.m3u8
+#EXTINF:-1 tvg-id="CGTN俄语" tvg-name="CGTN 俄语" tvg-logo="https://garysclub.sharewithyou.dpdns.org/logos/ysp-live-logos/cgtnru.png" group-title="央视" catchup="append" catchup-days="7" catchup-source="?playseek=${(b)yyyyMMddHHmmss}-${(e)yyyyMMddHHmmss}",CGTN 俄语
+http://145.239.65.118:20178/cgtnru.m3u8
+#EXTINF:-1 tvg-id="CGTN阿语" tvg-name="CGTN 阿拉伯语" tvg-logo="https://garysclub.sharewithyou.dpdns.org/logos/ysp-live-logos/cgtnar.png" group-title="央视" catchup="append" catchup-days="7" catchup-source="?playseek=${(b)yyyyMMddHHmmss}-${(e)yyyyMMddHHmmss}",CGTN 阿拉伯语
+http://145.239.65.118:20178/cgtnar.m3u8
+#EXTINF:-1 tvg-id="CGTN西语" tvg-name="CGTN 西班牙语" tvg-logo="https://garysclub.sharewithyou.dpdns.org/logos/ysp-live-logos/cgtnes.png" group-title="央视" catchup="append" catchup-days="7" catchup-source="?playseek=${(b)yyyyMMddHHmmss}-${(e)yyyyMMddHHmmss}",CGTN 西班牙语
+http://145.239.65.118:20178/cgtnes.m3u8
+#EXTINF:-1 tvg-id="CGTN纪录" tvg-name="CGTN 纪录" tvg-logo="https://garysclub.sharewithyou.dpdns.org/logos/ysp-live-logos/cgtndoc.png" group-title="央视" catchup="append" catchup-days="7" catchup-source="?playseek=${(b)yyyyMMddHHmmss}-${(e)yyyyMMddHHmmss}",CGTN 纪录
+http://145.239.65.118:20178/cgtndoc.m3u8
+#EXTINF:-1 tvg-id="CCTV风云剧场" tvg-name="CCTV 风云剧场" tvg-logo="https://garysclub.sharewithyou.dpdns.org/logos/ysp-live-logos/cctvfyjc.png" group-title="央视",CCTV 风云剧场
+http://145.239.65.118:20178/cctvfyjc.m3u8
+#EXTINF:-1 tvg-id="CCTV第一剧场" tvg-name="CCTV 第一剧场" tvg-logo="https://garysclub.sharewithyou.dpdns.org/logos/ysp-live-logos/cctvdyjc.png" group-title="央视",CCTV 第一剧场
+http://145.239.65.118:20178/cctvdyjc.m3u8
+#EXTINF:-1 tvg-id="CCTV怀旧剧场" tvg-name="CCTV 怀旧剧场" tvg-logo="https://garysclub.sharewithyou.dpdns.org/logos/ysp-live-logos/cctvhjjc.png" group-title="央视",CCTV 怀旧剧场
+http://145.239.65.118:20178/cctvhjjc.m3u8
+#EXTINF:-1 tvg-id="北京卫视" tvg-name="北京卫视" tvg-logo="https://garysclub.sharewithyou.dpdns.org/logos/ysp-live-logos/bjws.png" group-title="卫视" catchup="append" catchup-days="7" catchup-source="?playseek=${(b)yyyyMMddHHmmss}-${(e)yyyyMMddHHmmss}",北京卫视
+http://145.239.65.118:20178/bjws.m3u8
+#EXTINF:-1 tvg-id="江苏卫视" tvg-name="江苏卫视" tvg-logo="https://garysclub.sharewithyou.dpdns.org/logos/ysp-live-logos/jsws.png" group-title="卫视" catchup="append" catchup-days="7" catchup-source="?playseek=${(b)yyyyMMddHHmmss}-${(e)yyyyMMddHHmmss}",江苏卫视
+http://145.239.65.118:20178/jsws.m3u8
+#EXTINF:-1 tvg-id="东方卫视" tvg-name="东方卫视" tvg-logo="https://garysclub.sharewithyou.dpdns.org/logos/ysp-live-logos/dfws.png" group-title="卫视" catchup="append" catchup-days="7" catchup-source="?playseek=${(b)yyyyMMddHHmmss}-${(e)yyyyMMddHHmmss}",东方卫视
+http://145.239.65.118:20178/dfws.m3u8
+#EXTINF:-1 tvg-id="浙江卫视" tvg-name="浙江卫视" tvg-logo="https://garysclub.sharewithyou.dpdns.org/logos/ysp-live-logos/zjws.png" group-title="卫视" catchup="append" catchup-days="7" catchup-source="?playseek=${(b)yyyyMMddHHmmss}-${(e)yyyyMMddHHmmss}",浙江卫视
+http://145.239.65.118:20178/zjws.m3u8
+#EXTINF:-1 tvg-id="湖南卫视" tvg-name="湖南卫视" tvg-logo="https://garysclub.sharewithyou.dpdns.org/logos/ysp-live-logos/hnws.png" group-title="卫视" catchup="append" catchup-days="7" catchup-source="?playseek=${(b)yyyyMMddHHmmss}-${(e)yyyyMMddHHmmss}",湖南卫视
+http://145.239.65.118:20178/hnws.m3u8
+#EXTINF:-1 tvg-id="湖北卫视" tvg-name="湖北卫视" tvg-logo="https://garysclub.sharewithyou.dpdns.org/logos/ysp-live-logos/hbws.png" group-title="卫视" catchup="append" catchup-days="7" catchup-source="?playseek=${(b)yyyyMMddHHmmss}-${(e)yyyyMMddHHmmss}",湖北卫视
+http://145.239.65.118:20178/hbws.m3u8
+#EXTINF:-1 tvg-id="广东卫视" tvg-name="广东卫视" tvg-logo="https://garysclub.sharewithyou.dpdns.org/logos/ysp-live-logos/gdws.png" group-title="卫视" catchup="append" catchup-days="7" catchup-source="?playseek=${(b)yyyyMMddHHmmss}-${(e)yyyyMMddHHmmss}",广东卫视
+http://145.239.65.118:20178/gdws.m3u8
+#EXTINF:-1 tvg-id="广西卫视" tvg-name="广西卫视" tvg-logo="https://garysclub.sharewithyou.dpdns.org/logos/ysp-live-logos/gxws.png" group-title="卫视" catchup="append" catchup-days="7" catchup-source="?playseek=${(b)yyyyMMddHHmmss}-${(e)yyyyMMddHHmmss}",广西卫视
+http://145.239.65.118:20178/gxws.m3u8
+#EXTINF:-1 tvg-id="黑龙江卫视" tvg-name="黑龙江卫视" tvg-logo="https://garysclub.sharewithyou.dpdns.org/logos/ysp-live-logos/hljws.png" group-title="卫视" catchup="append" catchup-days="7" catchup-source="?playseek=${(b)yyyyMMddHHmmss}-${(e)yyyyMMddHHmmss}",黑龙江卫视
+http://145.239.65.118:20178/hljws.m3u8
+#EXTINF:-1 tvg-id="海南卫视" tvg-name="海南卫视" tvg-logo="https://garysclub.sharewithyou.dpdns.org/logos/ysp-live-logos/hainanws.png" group-title="卫视" catchup="append" catchup-days="7" catchup-source="?playseek=${(b)yyyyMMddHHmmss}-${(e)yyyyMMddHHmmss}",海南卫视
+http://145.239.65.118:20178/hainanws.m3u8
+#EXTINF:-1 tvg-id="重庆卫视" tvg-name="重庆卫视" tvg-logo="https://garysclub.sharewithyou.dpdns.org/logos/ysp-live-logos/cqws.png" group-title="卫视" catchup="append" catchup-days="7" catchup-source="?playseek=${(b)yyyyMMddHHmmss}-${(e)yyyyMMddHHmmss}",重庆卫视
+http://145.239.65.118:20178/cqws.m3u8
+#EXTINF:-1 tvg-id="深圳卫视" tvg-name="深圳卫视" tvg-logo="https://garysclub.sharewithyou.dpdns.org/logos/ysp-live-logos/szws.png" group-title="卫视" catchup="append" catchup-days="7" catchup-source="?playseek=${(b)yyyyMMddHHmmss}-${(e)yyyyMMddHHmmss}",深圳卫视
+http://145.239.65.118:20178/szws.m3u8
+#EXTINF:-1 tvg-id="四川卫视" tvg-name="四川卫视" tvg-logo="https://garysclub.sharewithyou.dpdns.org/logos/ysp-live-logos/scws.png" group-title="卫视" catchup="append" catchup-days="7" catchup-source="?playseek=${(b)yyyyMMddHHmmss}-${(e)yyyyMMddHHmmss}",四川卫视
+http://145.239.65.118:20178/scws.m3u8
+#EXTINF:-1 tvg-id="河南卫视" tvg-name="河南卫视" tvg-logo="https://garysclub.sharewithyou.dpdns.org/logos/ysp-live-logos/henanws.png" group-title="卫视" catchup="append" catchup-days="7" catchup-source="?playseek=${(b)yyyyMMddHHmmss}-${(e)yyyyMMddHHmmss}",河南卫视
+http://145.239.65.118:20178/henanws.m3u8
+#EXTINF:-1 tvg-id="东南卫视" tvg-name="东南卫视" tvg-logo="https://garysclub.sharewithyou.dpdns.org/logos/ysp-live-logos/dnws.png" group-title="卫视" catchup="append" catchup-days="7" catchup-source="?playseek=${(b)yyyyMMddHHmmss}-${(e)yyyyMMddHHmmss}",东南卫视
+http://145.239.65.118:20178/dnws.m3u8
+#EXTINF:-1 tvg-id="贵州卫视" tvg-name="贵州卫视" tvg-logo="https://garysclub.sharewithyou.dpdns.org/logos/ysp-live-logos/gzws.png" group-title="卫视" catchup="append" catchup-days="7" catchup-source="?playseek=${(b)yyyyMMddHHmmss}-${(e)yyyyMMddHHmmss}",贵州卫视
+http://145.239.65.118:20178/gzws.m3u8
+#EXTINF:-1 tvg-id="江西卫视" tvg-name="江西卫视" tvg-logo="https://garysclub.sharewithyou.dpdns.org/logos/ysp-live-logos/jxws.png" group-title="卫视" catchup="append" catchup-days="7" catchup-source="?playseek=${(b)yyyyMMddHHmmss}-${(e)yyyyMMddHHmmss}",江西卫视
+http://145.239.65.118:20178/jxws.m3u8
+#EXTINF:-1 tvg-id="辽宁卫视" tvg-name="辽宁卫视" tvg-logo="https://garysclub.sharewithyou.dpdns.org/logos/ysp-live-logos/lnws.png" group-title="卫视" catchup="append" catchup-days="7" catchup-source="?playseek=${(b)yyyyMMddHHmmss}-${(e)yyyyMMddHHmmss}",辽宁卫视
+http://145.239.65.118:20178/lnws.m3u8
+#EXTINF:-1 tvg-id="安徽卫视" tvg-name="安徽卫视" tvg-logo="https://garysclub.sharewithyou.dpdns.org/logos/ysp-live-logos/ahws.png" group-title="卫视" catchup="append" catchup-days="7" catchup-source="?playseek=${(b)yyyyMMddHHmmss}-${(e)yyyyMMddHHmmss}",安徽卫视
+http://145.239.65.118:20178/ahws.m3u8
+#EXTINF:-1 tvg-id="河北卫视" tvg-name="河北卫视" tvg-logo="https://garysclub.sharewithyou.dpdns.org/logos/ysp-live-logos/hebws.png" group-title="卫视" catchup="append" catchup-days="7" catchup-source="?playseek=${(b)yyyyMMddHHmmss}-${(e)yyyyMMddHHmmss}",河北卫视
+http://145.239.65.118:20178/hebws.m3u8
+#EXTINF:-1 tvg-id="山东卫视" tvg-name="山东卫视" tvg-logo="https://garysclub.sharewithyou.dpdns.org/logos/ysp-live-logos/sdws.png" group-title="卫视" catchup="append" catchup-days="7" catchup-source="?playseek=${(b)yyyyMMddHHmmss}-${(e)yyyyMMddHHmmss}",山东卫视
+http://145.239.65.118:20178/sdws.m3u8
+#EXTINF:-1 tvg-id="天津卫视" tvg-name="天津卫视" tvg-logo="https://garysclub.sharewithyou.dpdns.org/logos/ysp-live-logos/tjws.png" group-title="卫视" catchup="append" catchup-days="7" catchup-source="?playseek=${(b)yyyyMMddHHmmss}-${(e)yyyyMMddHHmmss}",天津卫视
+http://145.239.65.118:20178/tjws.m3u8
+#EXTINF:-1 tvg-id="吉林卫视" tvg-name="吉林卫视" tvg-logo="https://garysclub.sharewithyou.dpdns.org/logos/ysp-live-logos/jlws.png" group-title="卫视" catchup="append" catchup-days="7" catchup-source="?playseek=${(b)yyyyMMddHHmmss}-${(e)yyyyMMddHHmmss}",吉林卫视
+http://145.239.65.118:20178/jlws.m3u8
+#EXTINF:-1 tvg-id="陕西卫视" tvg-name="陕西卫视" tvg-logo="https://garysclub.sharewithyou.dpdns.org/logos/ysp-live-logos/saxws.png" group-title="卫视" catchup="append" catchup-days="7" catchup-source="?playseek=${(b)yyyyMMddHHmmss}-${(e)yyyyMMddHHmmss}",陕西卫视
+http://145.239.65.118:20178/saxws.m3u8
+#EXTINF:-1 tvg-id="宁夏卫视" tvg-name="宁夏卫视" tvg-logo="https://garysclub.sharewithyou.dpdns.org/logos/ysp-live-logos/nxws.png" group-title="卫视" catchup="append" catchup-days="7" catchup-source="?playseek=${(b)yyyyMMddHHmmss}-${(e)yyyyMMddHHmmss}",宁夏卫视
+http://145.239.65.118:20178/nxws.m3u8
+#EXTINF:-1 tvg-id="内蒙古卫视" tvg-name="内蒙古卫视" tvg-logo="https://garysclub.sharewithyou.dpdns.org/logos/ysp-live-logos/nmgws.png" group-title="卫视" catchup="append" catchup-days="7" catchup-source="?playseek=${(b)yyyyMMddHHmmss}-${(e)yyyyMMddHHmmss}",内蒙古卫视
+http://145.239.65.118:20178/nmgws.m3u8
+#EXTINF:-1 tvg-id="云南卫视" tvg-name="云南卫视" tvg-logo="https://garysclub.sharewithyou.dpdns.org/logos/ysp-live-logos/ynws.png" group-title="卫视" catchup="append" catchup-days="7" catchup-source="?playseek=${(b)yyyyMMddHHmmss}-${(e)yyyyMMddHHmmss}",云南卫视
+http://145.239.65.118:20178/ynws.m3u8
+#EXTINF:-1 tvg-id="山西卫视" tvg-name="山西卫视" tvg-logo="https://garysclub.sharewithyou.dpdns.org/logos/ysp-live-logos/shanxiws.png" group-title="卫视" catchup="append" catchup-days="7" catchup-source="?playseek=${(b)yyyyMMddHHmmss}-${(e)yyyyMMddHHmmss}",山西卫视
+http://145.239.65.118:20178/shanxiws.m3u8
+#EXTINF:-1 tvg-id="甘肃卫视" tvg-name="甘肃卫视" tvg-logo="https://garysclub.sharewithyou.dpdns.org/logos/ysp-live-logos/gsws.png" group-title="卫视" catchup="append" catchup-days="7" catchup-source="?playseek=${(b)yyyyMMddHHmmss}-${(e)yyyyMMddHHmmss}",甘肃卫视
+http://145.239.65.118:20178/gsws.m3u8
+#EXTINF:-1 tvg-id="青海卫视" tvg-name="青海卫视" tvg-logo="https://garysclub.sharewithyou.dpdns.org/logos/ysp-live-logos/qhws.png" group-title="卫视" catchup="append" catchup-days="7" catchup-source="?playseek=${(b)yyyyMMddHHmmss}-${(e)yyyyMMddHHmmss}",青海卫视
+http://145.239.65.118:20178/qhws.m3u8
+#EXTINF:-1 tvg-id="西藏卫视" tvg-name="西藏卫视" tvg-logo="https://garysclub.sharewithyou.dpdns.org/logos/ysp-live-logos/xizangws.png" group-title="卫视" catchup="append" catchup-days="7" catchup-source="?playseek=${(b)yyyyMMddHHmmss}-${(e)yyyyMMddHHmmss}",西藏卫视
+http://145.239.65.118:20178/xizangws.m3u8
+#EXTINF:-1 tvg-id="新疆卫视" tvg-name="新疆卫视" tvg-logo="https://garysclub.sharewithyou.dpdns.org/logos/ysp-live-logos/xjws.png" group-title="卫视" catchup="append" catchup-days="7" catchup-source="?playseek=${(b)yyyyMMddHHmmss}-${(e)yyyyMMddHHmmss}",新疆卫视
+http://145.239.65.118:20178/xjws.m3u8
+#EXTINF:-1 tvg-id="CETV1" tvg-name="CETV-1" tvg-logo="https://garysclub.sharewithyou.dpdns.org/logos/ysp-live-logos/cetv1.png" group-title="卫视" catchup="append" catchup-days="7" catchup-source="?playseek=${(b)yyyyMMddHHmmss}-${(e)yyyyMMddHHmmss}",CETV-1
+http://145.239.65.118:20178/cetv1.m3u8
+#EXTINF:-1 tvg-id="国学" tvg-name="国学频道" tvg-logo="https://garysclub.sharewithyou.dpdns.org/logos/ysp-live-logos/guoxue.png" group-title="卫视" catchup="append" catchup-days="7" catchup-source="?playseek=${(b)yyyyMMddHHmmss}-${(e)yyyyMMddHHmmss}",国学频道
+http://145.239.65.118:20178/guoxue.m3u8
+#EXTINF:-1 tvg-id="gzzh" tvg-name="广州综合" tvg-logo="https://live.fanmingming.cn/tv/%E5%B9%BF%E5%B7%9E%E7%BB%BC%E5%90%88.png" group-title="广东频道",广州综合
+http://145.239.65.118:20178/gzzh.m3u8
+#EXTINF:-1 tvg-id="gzxw" tvg-name="广州新闻" tvg-logo="https://live.fanmingming.cn/tv/%E5%B9%BF%E5%B7%9E%E6%96%B0%E9%97%BB.png" group-title="广东频道",广州新闻
+http://145.239.65.118:20178/gzxw.m3u8
+#EXTINF:-1 tvg-id="ngds" tvg-name="南国都市4K" tvg-logo="https://live.fanmingming.cn/tv/%E5%8D%97%E5%9B%BD%E9%83%BD%E5%B8%824K.png" group-title="广东频道",南国都市4K
+http://145.239.65.118:20178/ngds.m3u8
+#EXTINF:-1 tvg-id="gdzj" tvg-name="广东珠江" tvg-logo="https://live.fanmingming.cn/tv/%E5%B9%BF%E4%B8%9C%E7%8F%A0%E6%B1%9F.png" group-title="广东频道",广东珠江
+http://145.239.65.118:20178/gdzj.m3u8
+#EXTINF:-1 tvg-id="gdxw" tvg-name="广东新闻" tvg-logo="https://live.fanmingming.cn/tv/%E5%B9%BF%E4%B8%9C%E6%96%B0%E9%97%BB.png" group-title="广东频道",广东新闻
+http://145.239.65.118:20178/gdxw.m3u8
+#EXTINF:-1 tvg-id="gdty" tvg-name="广东体育" tvg-logo="https://live.fanmingming.cn/tv/%E5%B9%BF%E4%B8%9C%E4%BD%93%E8%82%B2.png" group-title="广东频道",广东体育
+http://145.239.65.118:20178/gdty.m3u8
+#EXTINF:-1 tvg-id="dwqws" tvg-name="大湾区卫视" tvg-logo="https://live.fanmingming.cn/tv/%E5%A4%A7%E6%B9%BE%E5%8C%BA%E5%8D%AB%E8%A7%86.png" group-title="广东频道",大湾区卫视
+http://145.239.65.118:20178/dwqws.m3u8
+#EXTINF:-1 tvg-id="gdgg" tvg-name="广东民生" tvg-logo="https://live.fanmingming.cn/tv/%E5%B9%BF%E4%B8%9C%E6%B0%91%E7%94%9F.png" group-title="广东频道",广东民生
+http://145.239.65.118:20178/gdgg.m3u8
+#EXTINF:-1 tvg-id="gdys" tvg-name="广东影视" tvg-logo="https://live.fanmingming.cn/tv/%E5%B9%BF%E4%B8%9C%E5%BD%B1%E8%A7%86.png" group-title="广东频道",广东影视
+http://145.239.65.118:20178/gdys.m3u8
+#EXTINF:-1 tvg-id="gdse" tvg-name="广东少儿" tvg-logo="https://live.fanmingming.cn/tv/%E5%B9%BF%E4%B8%9C%E5%B0%91%E5%84%BF.png" group-title="广东频道",广东少儿
+http://145.239.65.118:20178/gdse.m3u8
+#EXTINF:-1 tvg-id="jjkt" tvg-name="嘉佳卡通" tvg-logo="https://live.fanmingming.cn/tv/%E5%98%89%E4%BD%B3%E5%8D%A1%E9%80%9A.png" group-title="广东频道",嘉佳卡通
+http://145.239.65.118:20178/jjkt.m3u8
+#EXTINF:-1 tvg-id="gdzy" tvg-name="广东4K综艺" tvg-logo="https://live.fanmingming.cn/tv/%E5%B9%BF%E4%B8%9C4K%E7%BB%BC%E8%89%BA.png" group-title="广东频道",广东4K综艺
+http://145.239.65.118:20178/gdzy.m3u8
+#EXTINF:-1 tvg-id="dwqhw" tvg-name="大湾区海外" tvg-logo="https://live.fanmingming.cn/tv/%E5%A4%A7%E6%B9%BE%E5%8C%BA%E6%B5%B7%E5%A4%96.png" group-title="广东频道",大湾区海外
+http://145.239.65.118:20178/dwqhw.m3u8
+#EXTINF:-1 tvg-id="nfgw" tvg-name="南方购物" tvg-logo="https://live.fanmingming.cn/tv/%E5%8D%97%E6%96%B9%E8%B4%AD%E7%89%A9.png" group-title="广东频道",南方购物
+http://145.239.65.118:20178/nfgw.m3u8
+#EXTINF:-1 tvg-id="lnxq" tvg-name="岭南戏曲" tvg-logo="https://live.fanmingming.cn/tv/%E5%B2%AD%E5%8D%97%E6%88%8F%E6%9B%B2.png" group-title="广东频道",岭南戏曲
+http://145.239.65.118:20178/lnxq.m3u8
+#EXTINF:-1 tvg-id="gdjdj" tvg-name="广东经典剧" tvg-logo="https://live.fanmingming.cn/tv/%E5%B9%BF%E4%B8%9C%E7%BB%8F%E5%85%B8%E5%89%A7.png" group-title="广东频道",广东经典剧
+http://145.239.65.118:20178/gdjdj.m3u8
+#EXTINF:-1 tvg-id="jlp" tvg-name="广东纪录片" tvg-logo="https://live.fanmingming.cn/tv/%E5%B9%BF%E4%B8%9C%E7%BA%AA%E5%BD%95%E7%89%87.png" group-title="广东频道",广东纪录片
+http://145.239.65.118:20178/jlp.m3u8
+#EXTINF:-1 tvg-id="jkpd" tvg-name="GRTN健康" tvg-logo="https://live.fanmingming.cn/tv/GRTN%E5%81%A5%E5%BA%B7.png" group-title="广东频道",GRTN健康
+http://145.239.65.118:20178/jkpd.m3u8
+#EXTINF:-1 tvg-id="shpd" tvg-name="GRTN生活" tvg-logo="https://live.fanmingming.cn/tv/GRTN%E7%94%9F%E6%B4%BB.png" group-title="广东频道",GRTN生活
+http://145.239.65.118:20178/shpd.m3u8
+#EXTINF:-1 tvg-id="gdyd" tvg-name="广东移动" tvg-logo="https://live.fanmingming.cn/tv/%E5%B9%BF%E4%B8%9C%E7%A7%BB%E5%8A%A8.png" group-title="广东频道",广东移动
+http://145.239.65.118:20178/gdyd.m3u8
+#EXTINF:-1 tvg-id="stzh" tvg-name="汕头综合" tvg-logo="https://live.fanmingming.cn/tv/%E6%B1%95%E5%A4%B4%E7%BB%BC%E5%90%88.png" group-title="广东频道",汕头综合
+http://145.239.65.118:20178/stzh.m3u8
+#EXTINF:-1 tvg-id="swzh" tvg-name="汕尾综合" tvg-logo="https://live.fanmingming.cn/tv/%E6%B1%95%E5%B0%BE%E7%BB%BC%E5%90%88.png" group-title="广东频道",汕尾综合
+http://145.239.65.118:20178/swzh.m3u8
+#EXTINF:-1 tvg-id="jmzh" tvg-name="江门综合" tvg-logo="https://live.fanmingming.cn/tv/%E6%B1%9F%E9%97%A8%E7%BB%BC%E5%90%88.png" group-title="广东频道",江门综合
+http://145.239.65.118:20178/jmzh.m3u8
