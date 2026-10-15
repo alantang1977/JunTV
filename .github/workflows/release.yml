@@ -1,286 +1,68 @@
-name: Release
+name: Sync Upstream Release
 
 on:
+  schedule:
+    - cron: '0 4 * * *'  # 每天检测一次
   workflow_dispatch:
-    inputs:
-      upstream_version:
-        description: "上游 Release 版本号（如 3.1.0，留空则自动获取最新版并检测重复）"
-        required: false
-        default: ""
 
 permissions:
   contents: write
 
 jobs:
-  get-upstream-version:
-    runs-on: ubuntu-latest
-    outputs:
-      version: ${{ steps.get_version.outputs.version }}
-      tag: ${{ steps.get_version.outputs.tag }}
-      skip_build: ${{ steps.check_dup.outputs.skip_build }}
-    steps:
-      - name: 解析上游 Release 版本
-        id: get_version
-        shell: bash
-        run: |
-          if [ -n "${{ github.event.inputs.upstream_version }}" ]; then
-            TAG="${{ github.event.inputs.upstream_version }}"
-          else
-            TAG=$(gh release view --repo Guovin/iptv-api --json tagName --jq '.tagName')
-          fi
-          
-          VERSION=$(echo "$TAG" | sed 's/^v//')
-          
-          echo "version=$VERSION" >> $GITHUB_OUTPUT
-          echo "tag=$TAG" >> $GITHUB_OUTPUT
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: 重复发布检测（仅自动模式）
-        id: check_dup
-        shell: bash
-        run: |
-          if [ -n "${{ github.event.inputs.upstream_version }}" ]; then
-            echo "手动指定版本，跳过重复检测"
-            echo "skip_build=false" >> $GITHUB_OUTPUT
-            exit 0
-          fi
-
-          LOCAL_LATEST=$(gh release view --json tagName --jq '.tagName' 2>/dev/null || echo "")
-          LOCAL_VERSION=$(echo "$LOCAL_LATEST" | sed 's/^v//')
-
-          echo "上游最新版本: v${{ steps.get_version.outputs.version }}"
-          echo "本地已发布版本: ${LOCAL_LATEST:-无}"
-
-          if [ "${{ steps.get_version.outputs.version }}" = "$LOCAL_VERSION" ] && [ -n "$LOCAL_VERSION" ]; then
-            echo "✅ 版本一致，无需重复构建发布"
-            echo "skip_build=true" >> $GITHUB_OUTPUT
-          else
-            echo "🔄 检测到新版本，启动构建发布流程"
-            echo "skip_build=false" >> $GITHUB_OUTPUT
-          fi
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-  test:
-    runs-on: ubuntu-latest
-    needs: get-upstream-version
-    if: needs.get-upstream-version.outputs.skip_build != 'true'
-    steps:
-      - name: Checkout 上游代码
-        uses: actions/checkout@v6
-        with:
-          repository: Guovin/iptv-api
-          ref: ${{ needs.get-upstream-version.outputs.tag }}
-
-      - name: 安装 PySide6 GUI 运行时系统依赖
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y --no-install-recommends \
-            libegl1 \
-            libxkbcommon0 \
-            libfontconfig1 \
-            libxcb1 \
-            libxcb-cursor0 \
-            libxcb-icccm4 \
-            libxcb-image0 \
-            libxcb-keysyms1 \
-            libxcb-randr0 \
-            libxcb-render-util0 \
-            libxcb-shape0 \
-            libxcb-shm0 \
-            libxcb-xfixes0 \
-            libxcb-xinerama0 \
-            libxcb-xkb1 \
-            libxkbcommon-x11-0 \
-            xvfb
-
-      - name: 释放占用端口（8080 RTMP / 其他残留）
-        run: |
-          sudo lsof -ti:8080 | xargs -r sudo kill -9 || true
-          sudo lsof -ti:1935 | xargs -r sudo kill -9 || true
-
-      - name: Set up Python 3.14
-        uses: actions/setup-python@v6
-        with:
-          python-version: '3.14'
-          update-environment: true
-          cache: 'pipenv'
-
-      - name: 安装依赖
-        shell: bash
-        run: |
-          python -m pip install --upgrade pip pipenv
-          pipenv --python 3.14
-          pipenv install --dev --deploy
-
-      - name: 运行单元测试（xvfb 虚拟显示环境）
-        run: |
-          xvfb-run -a pipenv run python -m unittest discover -s tests -v
-
-  build:
-    needs: [get-upstream-version, test]
-    if: github.ref == 'refs/heads/master' && needs.get-upstream-version.outputs.skip_build != 'true'
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - os: windows-latest
-            platform: Windows
-          - os: macos-latest
-            platform: macOS
-    runs-on: ${{ matrix.os }}
-    steps:
-      - name: Checkout 上游代码
-        uses: actions/checkout@v6
-        with:
-          repository: Guovin/iptv-api
-          ref: ${{ needs.get-upstream-version.outputs.tag }}
-
-      - name: Set up Python
-        uses: actions/setup-python@v6
-        with:
-          python-version: '3.14'
-          update-environment: true
-          cache: 'pipenv'
-
-      - name: Install dependencies with pipenv
-        shell: bash
-        run: |
-          python -m pip install --upgrade pip pipenv
-          pipenv --python 3.14
-          pipenv install --dev --deploy
-
-      - name: Verify Windows GUI imports
-        if: runner.os == 'Windows'
-        run: pipenv run python -c "import win32api, win32con, win32gui, qframelesswindow"
-
-      - name: Build the primary GUI application
-        run: pipenv run ui_build
-
-      - name: Smoke test Windows application
-        if: runner.os == 'Windows'
-        shell: pwsh
-        timeout-minutes: 2
-        run: |
-          $versionInfo = Get-Content version.json -Raw | ConvertFrom-Json
-          $app = Join-Path $PWD "dist\$($versionInfo.name)-GUI-v$($versionInfo.version)\$($versionInfo.name)-GUI-v$($versionInfo.version).exe"
-          if (-not (Test-Path $app)) {
-            Write-Error "Windows application executable not found: $app"
-            exit 1
-          }
-          $process = Start-Process -FilePath $app -ArgumentList "--verify-runtime" -Wait -PassThru -ErrorAction Stop
-          $exitCode = $process.ExitCode
-          if ($null -eq $exitCode) {
-            throw "Windows application runtime verification did not return an exit code."
-          }
-          if ($exitCode -ne 0) {
-            Write-Error "Windows application runtime verification failed with exit code $exitCode." -ErrorAction Continue
-            exit $exitCode
-          }
-
-      - name: Read version info
-        shell: bash
-        run: |
-          python - <<'PY'
-          import json
-          import os
-          with open("version.json", encoding="utf-8") as file:
-              info = json.load(file)
-          if not info.get("name") or not info.get("version"):
-              raise SystemExit("version.json must contain name and version")
-          with open(os.environ["GITHUB_ENV"], "a", encoding="utf-8") as file:
-              file.write(f"name={info['name']}\nversion={info['version']}\n")
-          PY
-
-      - name: Package Windows application
-        if: runner.os == 'Windows'
-        shell: pwsh
-        run: |
-          $bundle = Join-Path $PWD "dist\$env:name-GUI-v$env:version"
-          if (-not (Test-Path $bundle)) {
-            Write-Error "Windows application directory not found: $bundle"
-            exit 1
-          }
-          New-Item -ItemType Directory -Path artifacts -Force | Out-Null
-          $asset = "$env:name-GUI-Windows-$env:RUNNER_ARCH-v$env:version.zip"
-          Compress-Archive -Path $bundle -DestinationPath (Join-Path $PWD "artifacts\$asset")
-
-      - name: Package macOS application
-        if: runner.os == 'macOS'
-        shell: bash
-        run: |
-          app_path="dist/${name}-GUI-v${version}.app"
-          if [[ ! -d "$app_path" ]]; then
-            echo "macOS application bundle not found: $app_path" >&2
-            exit 1
-          fi
-          mkdir -p artifacts
-          asset="${name}-GUI-macOS-${RUNNER_ARCH}-v${version}.zip"
-          ditto -c -k --sequesterRsrc --keepParent "$app_path" "artifacts/$asset"
-
-      - name: Upload GUI artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: gui-${{ matrix.platform }}-${{ runner.arch }}
-          path: artifacts/*.zip
-          if-no-files-found: error
-
-  release:
-    needs: [get-upstream-version, build]
-    if: needs.get-upstream-version.outputs.skip_build != 'true'
+  sync:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout 上游代码（读取版本和更新日志）
-        uses: actions/checkout@v6
+      - name: 获取上游最新 Release
+        id: upstream
+        uses: actions/github-script@v7
         with:
-          repository: Guovin/iptv-api
-          ref: ${{ needs.get-upstream-version.outputs.tag }}
+          script: |
+            const { data: release } = await github.rest.repos.getLatestRelease({
+              owner: 'Guovin',
+              repo: 'iptv-api'
+            });
+            return {
+              tag: release.tag_name,
+              name: release.name,
+              body: release.body,
+              assets: release.assets.map(a => ({ name: a.name, url: a.browser_download_url }))
+            };
 
-      - name: Download GUI artifacts
-        uses: actions/download-artifact@v4
+      - name: 检查本地是否已存在
+        id: check
+        uses: actions/github-script@v7
         with:
-          pattern: gui-*
-          path: release-assets
-          merge-multiple: true
+          script: |
+            const tag = '${{ steps.upstream.outputs.result }}'.match(/"tag":"([^"]+)"/)[1];
+            try {
+              await github.rest.repos.getReleaseByTag({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                tag: tag
+              });
+              return true;
+            } catch (e) {
+              if (e.status === 404) return false;
+              throw e;
+            }
 
-      - name: Read version info
-        shell: pwsh
+      - name: 下载上游资产
+        if: steps.check.outputs.result == 'false'
         run: |
-          $json = Get-Content version.json -Raw | ConvertFrom-Json
-          if (-not $json.name -or -not $json.version) {
-            Write-Error 'version.json must contain name and version.'
-            exit 1
-          }
-          Add-Content -Path $env:GITHUB_ENV -Value "name=$($json.name)"
-          Add-Content -Path $env:GITHUB_ENV -Value "version=$($json.version)"
+          mkdir -p assets
+          echo '${{ steps.upstream.outputs.result }}' | python -c "
+          import sys, json, urllib.request
+          data = json.load(sys.stdin)
+          for asset in data['assets']:
+              print(f'下载 {asset[\"name\"]}')
+              urllib.request.urlretrieve(asset['url'], f'assets/{asset[\"name\"]}')
+          "
 
-      - name: Get changelog
-        shell: pwsh
-        run: |
-          $version = $env:version
-          $changelog = Get-Content CHANGELOG.md -Raw
-          $notes = [regex]::Match($changelog, "(?s)## v$version.*?(?=## v|$)").Value
-          $notes = $notes -replace "(?s)^## v$version.*?\n", ''
-          $notes = $notes.Trim()
-          if (-not $notes) {
-            $notes = "Release v$version"
-          }
-          Set-Content -Path release-notes.md -Value $notes -Encoding utf8
-
-      - name: Publish GitHub release
-        shell: pwsh
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          $assets = @(Get-ChildItem release-assets -Filter '*.zip' | Select-Object -ExpandProperty FullName)
-          if ($assets.Count -ne 2) {
-            Write-Error "Expected two desktop assets, found $($assets.Count)."
-            exit 1
-          }
-          $checksums = Join-Path $PWD 'release-assets/SHA256SUMS.txt'
-          $assets | ForEach-Object {
-            $hash = (Get-FileHash -LiteralPath $_ -Algorithm SHA256).Hash.ToLower()
-            "$hash  $(Split-Path $_ -Leaf)"
-          } | Set-Content -Path $checksums -Encoding utf8NoBOM
-          gh release create "v$env:version" $assets $checksums --title "v$env:version" --notes-file release-notes.md --target $env:GITHUB_SHA
+      - name: 发布到本仓库
+        if: steps.check.outputs.result == 'false'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ fromJson(steps.upstream.outputs.result).tag }}
+          name: ${{ fromJson(steps.upstream.outputs.result).name }}
+          body: ${{ fromJson(steps.upstream.outputs.result).body }}
+          files: assets/*
