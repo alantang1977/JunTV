@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       upstream_version:
-        description: ""
+        description: "上游 Release 版本号（如 3.1.0，留空则自动获取最新版并检测重复）"
         required: false
         default: ""
 
