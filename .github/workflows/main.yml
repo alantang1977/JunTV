@@ -1,271 +1,157 @@
-name: Generate playlist manually
-
-# ⚠️注意：请不要在 fork 的仓库中添加 `on: schedule` 定时任务（cron）。
-# 生成结果只能通过 Pages Artifact、每次运行独立的 Release 或外部端点发布，不得提交回 Git。
-# 如需要频繁更新或定时执行，请使用 Docker、命令行、GUI 或外部对象存储。
+# =============================================================================
+# Update iptv直播源列表 - JunTV 仓库专用工作流
+# -----------------------------------------------------------------------------
+# 目标：让 JunTV（IPTV-API v3.x）在 GitHub Actions 中自动采集、测速并生成
+#       直播源文件，然后**提交到仓库 output/ 目录**，
+#       这样即可通过固定链接（如 raw.githubusercontent.com）直接播放。
 #
-# ⚠️NOTICE: Do NOT add `on: schedule` cron triggers in forked repositories.
-# Publish generated results only through a Pages artifact, a per-run release, or an external endpoint; never commit them to Git.
-# Use Docker, the CLI, the GUI, or external object storage for frequent or scheduled runs.
+# 健壮性改进：
+#   1. Python 3.14（JunTV Pipfile 要求）
+#   2. JunTV 代码中无 open_driver / selenium，故不装 Chrome/chromedriver/selenium
+#   3. permissions: contents: write、fetch-depth: 0、pipenv 的 ~/.local/bin PATH
+#      修复、mkdir -p output、Artifact 备份、git push 不使用 --force
+#   4. 运行时移除 .gitignore 中对 /output/ 的忽略规则，使生成文件可被提交
+#
+# 已修复的问题：
+#   A. push 前先 `git pull --rebase --autostash`：运行一次约 25 分钟，期间若
+#      main 被手动推送过，不再因 non-fast-forward 被拒，而是把自动提交变基到
+#      远端最新之上再推送（fast-forward）。
+#   B. 提交前还原 config/subscribe.txt：该文件是手动维护的源订阅列表，
+#      bot 运行时虽会改写它，但不把它的改动提交进去，保留手动编辑、避免冲突。
+#   C. 忽略并取消跟踪 output/data/：测速数据库 channel_results.db 已被跟踪
+#      入库（约 96MB），每次重新生成涨到 ~102MB，超过 GitHub 100MB 单文件
+#      上限被 GH001 拒收。.gitignore 对“已跟踪文件”无效，因此必须
+#      `git rm -r --cached` 把它从索引中移除（只删索引，保留工作区文件）。
+#      output/data/ 下还有 rtmp.db、cache.gz、frozen.gz、run_state.json 等
+#      同类运行时状态，整个目录一并忽略。
+#   D. 兜底大文件保险：提交前扫描暂存区，任何 >= 95MiB 的单文件一律移出
+#      暂存区并自动写入 .gitignore，防止今后其他产物（日志、截图、新数据库
+#      等）再次触发 GH001。
+# =============================================================================
+name: 'Update iptv直播源列表'
 
 on:
+  schedule:
+    - cron: '55 0 */2 * *'  # 每2天凌晨00点55分执行任务（UTC时间，对应北京时间08:55）
   workflow_dispatch:
+    branches:
+      - main
+      - dev
+      - gd
 
+# 授予工作流仓库写入权限，确保能推送更新结果
 permissions:
-  contents: read
-
-concurrency:
-  group: playlist-release-${{ github.repository }}
-  cancel-in-progress: false
+  contents: write
 
 jobs:
-  generate:
-    runs-on: ubuntu-latest
-    timeout-minutes: 300
-    permissions:
-      contents: read
-      pages: write
-      id-token: write
-    outputs:
-      source_sha: ${{ steps.source.outputs.sha }}
-      pages_base_url: ${{ steps.generate.outputs.pages_base_url }}
-      release_tag: ${{ steps.release.outputs.tag }}
-      release_title: ${{ steps.release.outputs.title }}
+  push:
+    runs-on: ${{ matrix.operating-system }}
+    strategy:
+      matrix:
+        operating-system: [ 'ubuntu-latest' ]
     steps:
-      - name: Checkout source and configuration
-        uses: actions/checkout@v6
+      - name: Set branch name
+        id: vars
+        run: echo "BRANCH_NAME=${{ github.repository_owner == 'Guovin' && 'gd' || 'main' }}" >> $GITHUB_ENV
+
+      - uses: actions/checkout@v6
         with:
-          fetch-depth: 1
+          ref: ${{ env.BRANCH_NAME }}
+          fetch-depth: 0  # 拉取完整git历史，避免commit异常
 
-      - name: Configure GitHub Pages
-        id: pages
-        uses: actions/configure-pages@v5
-
-      - name: Load upstream configuration
-        if: github.repository_owner == 'Guovin'
-        run: |
-          git fetch --depth=1 origin gd
-          git archive FETCH_HEAD config | tar -x
-
-      - name: Record checked-out revision and state key
-        id: source
-        env:
-          CONFIG_HASH: ${{ hashFiles('config/**/*.ini', 'config/**/*.txt', 'config/**/*.m3u') }}
-        run: |
-          echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
-          echo "state_prefix=playlist-state-v1-${RUNNER_OS}-${CONFIG_HASH}-" >> "$GITHUB_OUTPUT"
-          echo "state_key=playlist-state-v1-${RUNNER_OS}-${CONFIG_HASH}-${GITHUB_RUN_ID}" >> "$GITHUB_OUTPUT"
-          mkdir -p "$RUNNER_TEMP/iptv-config-before"
-          cp -a config/. "$RUNNER_TEMP/iptv-config-before/"
-
-      - name: Remove generated files from the checkout
-        run: rm -rf -- output release-assets
-
-      - name: Restore result history
-        id: restore-state
-        uses: actions/cache/restore@v4
-        with:
-          path: |
-            output/data/cache.gz
-            output/data/frozen.gz
-          key: ${{ steps.source.outputs.state_key }}
-          restore-keys: ${{ steps.source.outputs.state_prefix }}
-
-      - name: Set up Python 3.14
+      - name: Run with setup-python 3.14
         uses: actions/setup-python@v6
         with:
           python-version: '3.14'
           update-environment: true
-          cache: pipenv
+          cache: 'pipenv'
 
       - name: Install FFmpeg
         run: sudo apt-get update && sudo apt-get install -y ffmpeg
 
+      - name: Install pipenv
+        run: |
+          pip3 install --user pipenv
+          echo "$HOME/.local/bin" >> $GITHUB_PATH  # 修复~/.local/bin不在PATH导致pipenv找不到
+
+      - name: Ensure output directory exist
+        run: mkdir -p output
+
+      # JunTV 上游默认在 .gitignore 中忽略 /output/（官方只上传 Artifact 不提交）。
+      # 本工作流需要把直播源文件提交到 output/，因此移除该忽略规则（幂等）。
+      # 同时永久忽略运行时数据目录与截图目录：
+      #   - output/data/ 下的 channel_results.db（测速 SQLite）实测可达 102MB，
+      #     超过 GitHub 单文件 100MB 硬上限，push 会被 GH001 拒绝；
+      #     rtmp.db / cache.gz / frozen.gz / run_state.json 同为可再生的本地状态。
+      #   - output/screenshots/ 是运行时视频截图，体积大且不是要发布的直播源。
+      - name: Ensure output directory is tracked
+        run: |
+          sed -i '\#^/output/$#d' .gitignore
+          grep -qxF 'output/data/' .gitignore || echo 'output/data/' >> .gitignore
+          grep -qxF 'output/screenshots/' .gitignore || echo 'output/screenshots/' >> .gitignore
+
       - name: Install dependencies
+        run: pipenv --python 3.14 && pipenv install --deploy
+
+      - name: Update
+        run: pipenv run dev
+
+      - name: Debug‑Print generated files
         run: |
-          python -m pip install --upgrade pip pipenv
-          pipenv --python 3.14
-          pipenv install --deploy
+          ls -la
+          ls -la ./output || true
 
-      - name: Generate playlist results
-        id: generate
-        env:
-          PAGES_BASE_URL: ${{ steps.pages.outputs.base_url }}
-        run: |
-          pages_base_url="${PAGES_BASE_URL%/}"
-          echo "pages_base_url=$pages_base_url" >> "$GITHUB_OUTPUT"
-          IPTV_API_ARTIFACT_BASE_URL="$pages_base_url" pipenv run dev
-
-      - name: Create release metadata
-        id: release
-        run: |
-          mapfile -t release_metadata < <(
-            pipenv run python -c 'from scripts.publish_results import build_release_metadata; from utils.config import config; metadata = build_release_metadata(config.time_zone); print(metadata["tag"]); print(metadata["title"]); print(metadata["generated_at"])'
-          )
-          echo "tag=${release_metadata[0]}" >> "$GITHUB_OUTPUT"
-          echo "title=${release_metadata[1]}" >> "$GITHUB_OUTPUT"
-          echo "generated_at=${release_metadata[2]}" >> "$GITHUB_OUTPUT"
-
-      - name: Prepare public release assets
-        id: assets
-        run: |
-          final_file="$(pipenv run python -c 'from utils.config import config; print(config.final_file)')"
-          pipenv run python scripts/publish_results.py \
-            --final-file "$final_file" \
-            --destination release-assets \
-            --generated-at "${{ steps.release.outputs.generated_at }}" \
-            --release-tag "${{ steps.release.outputs.tag }}" \
-            --pages-destination pages-site \
-            --pages-base-url "${{ steps.generate.outputs.pages_base_url }}"
-          echo "final_file=$final_file" >> "$GITHUB_OUTPUT"
-
-      - name: Upload GitHub Pages artifact
-        uses: actions/upload-pages-artifact@v4
-        with:
-          path: pages-site
-
-      - name: Upload release artifact
+      - name: Upload generated output as artifact
         uses: actions/upload-artifact@v4
         with:
-          name: playlist-release-assets-${{ steps.release.outputs.tag }}
-          path: release-assets
-          if-no-files-found: error
-          retention-days: 1
+          name: generated-live-files
+          path: ./output
+          if-no-files-found: warn
 
-      - name: Report non-persistent configuration changes
+      - name: Commit and push if changed
         run: |
-          if ! diff -qr "$RUNNER_TEMP/iptv-config-before" config >/dev/null; then
-            echo "::warning::The update changed files under config/. These changes are not committed by the workflow."
-            {
-              echo "### Configuration notice"
-              echo
-              echo "The update changed files under \`config/\` (for example through automatic source disabling)."
-              echo "The workflow intentionally did not commit those changes. Use Docker, CLI, or the GUI when this state must persist."
-            } >> "$GITHUB_STEP_SUMMARY"
+          set -x
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+
+          # [修复B] config/subscribe.txt 是手动维护的源订阅列表。
+          # bot 运行时可能改写它，但还原成仓库里已提交的版本，
+          # 不纳入本次自动提交，从而保留手动编辑、避免冲突。
+          git restore config/subscribe.txt 2>/dev/null || true
+
+          # [修复C] output/data/ 下的 channel_results.db 等是运行时状态文件，
+          # 其中 channel_results.db 已被跟踪（约96MB），重新生成后达 ~102MB，
+          # 超过 GitHub 100MB 单文件上限，被 GH001 拒收。
+          # .gitignore 对已跟踪文件无效，必须 git rm --cached 把它们移出索引
+          # （-f 容忍工作区文件已被重新生成的情况；只删索引、不删工作区文件）。
+          # 首次运行会提交“删除这些文件”，之后因已忽略且未跟踪而成为空操作。
+          grep -qxF 'output/data/' .gitignore || echo 'output/data/' >> .gitignore
+          git rm -r --cached -f output/data/ 2>/dev/null || true
+          grep -qxF 'output/screenshots/' .gitignore || echo 'output/screenshots/' >> .gitignore
+          git rm -r --cached -f output/screenshots/ 2>/dev/null || true
+
+          git add .
+
+          # [修复D] 兜底保险：扫描暂存区中新增/修改的文件，任何 >= 95MiB 的
+          # 单文件都移出暂存区并把其路径写入 .gitignore，确保无论哪个产物
+          # 膨胀（日志、截图、新的数据库等）都不会再触发 GH001。
+          size_limit=$((95 * 1024 * 1024))
+          git diff --cached --name-only --diff-filter=AM -z | while IFS= read -r -d '' f; do
+            if [ -f "$f" ]; then
+              sz=$(wc -c < "$f")
+              if [ "$sz" -gt "$size_limit" ]; then
+                echo "::warning file=${f}::unstaging oversized file (${sz} bytes); GitHub hard limit is 100 MiB"
+                grep -qxF "$f" .gitignore || printf '\n# auto-added by CI: file exceeds GitHub 100 MiB limit\n%s\n' "$f" >> .gitignore
+                git rm --cached -f -- "$f"
+              fi
+            fi
+          done
+          git add .gitignore
+
+          if ! git diff --staged --quiet; then
+            git commit -m "Github Action Auto Updated"
+            # [修复A] 运行期间 main 可能已被手动推送（约25分钟窗口），
+            # 先变基到远端最新，再以 fast-forward 推送，避免 non-fast-forward 被拒。
+            git pull --rebase --autostash origin "${{ env.BRANCH_NAME }}"
+            git push origin "${{ env.BRANCH_NAME }}"
           fi
-
-      - name: Check that Git history was not changed
-        env:
-          SOURCE_SHA: ${{ steps.source.outputs.sha }}
-        run: test "$(git rev-parse HEAD)" = "$SOURCE_SHA"
-
-      - name: Detect reusable result state
-        id: result-state
-        run: |
-          if [[ -f output/data/cache.gz || -f output/data/frozen.gz ]]; then
-            echo "available=true" >> "$GITHUB_OUTPUT"
-          fi
-
-      - name: Save result history
-        if: steps.result-state.outputs.available == 'true' && steps.restore-state.outputs.cache-hit != 'true'
-        uses: actions/cache/save@v4
-        with:
-          path: |
-            output/data/cache.gz
-            output/data/frozen.gz
-          key: ${{ steps.source.outputs.state_key }}
-
-      - name: Add subscription links to summary
-        env:
-          PAGES_BASE: ${{ steps.generate.outputs.pages_base_url }}
-          RELEASE_BASE: https://github.com/${{ github.repository }}/releases/download/${{ steps.release.outputs.tag }}
-        run: |
-          {
-            echo "### Published playlist"
-            echo
-            echo "在线链接 / Online links"
-            echo "- Pages TXT: $PAGES_BASE/result.txt"
-            if [[ -f release-assets/result.m3u ]]; then
-              echo "- Pages M3U: $PAGES_BASE/result.m3u"
-            fi
-            if [[ -f release-assets/epg.gz ]]; then
-              echo "- Pages EPG: $PAGES_BASE/epg.gz"
-            fi
-            echo
-            echo "下载链接 / Download links"
-            echo "- Pages result page (preview/download): $PAGES_BASE"
-            echo "- Release TXT: $RELEASE_BASE/result.txt"
-            if [[ -f release-assets/result.m3u ]]; then
-              echo "- Release M3U: $RELEASE_BASE/result.m3u"
-            fi
-            if [[ -f release-assets/epg.gz ]]; then
-              echo "- Release EPG: $RELEASE_BASE/epg.gz"
-            fi
-            if [[ -f release-assets/log.log ]]; then
-              echo "- Release runtime log: $RELEASE_BASE/log.log"
-            fi
-            if [[ -f release-assets/result.log ]]; then
-              echo "- Release result log: $RELEASE_BASE/result.log"
-            fi
-            if [[ -f release-assets/unmatch.log ]]; then
-              echo "- Release unmatched channels: $RELEASE_BASE/unmatch.log"
-            fi
-            echo
-            echo "Generated from \`${{ steps.assets.outputs.final_file }}\` without creating a Git commit."
-          } >> "$GITHUB_STEP_SUMMARY"
-
-  deploy-pages:
-    needs: [generate, publish-release]
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    permissions:
-      contents: read
-      pages: write
-      id-token: write
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    steps:
-      - name: Deploy GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
-
-  publish-release:
-    needs: generate
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    permissions:
-      actions: read
-      contents: write
-    steps:
-      - name: Download release artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: playlist-release-assets-${{ needs.generate.outputs.release_tag }}
-          path: release-assets
-
-      - name: Publish playlist release
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          PAGES_BASE: ${{ needs.generate.outputs.pages_base_url }}
-          RELEASE_TAG: ${{ needs.generate.outputs.release_tag }}
-          RELEASE_TITLE: ${{ needs.generate.outputs.release_title }}
-          SOURCE_SHA: ${{ needs.generate.outputs.source_sha }}
-        run: |
-          release_title="$RELEASE_TITLE"
-          pages_link="<a href=\"$PAGES_BASE\" target=\"_blank\" rel=\"noopener noreferrer\">打开 GitHub Pages 结果页面 / Open GitHub Pages results page</a>"
-          printf -v release_notes '%s\n\n%s\n\n%s' \
-            "手动生成的 IPTV 结果。GitHub Pages 页面提供在线订阅地址与预览，下载按钮指向本次 Release 的结果文件和日志附件。" \
-            "Manually generated IPTV results. The GitHub Pages page provides subscription URLs and previews; its Download buttons point to this Release's result files and logs." \
-            "$pages_link"
-          if [[ "$GITHUB_REPOSITORY" == "Guovin/iptv-api" ]]; then
-            printf -v release_notes '%s\n\n%s\n\n%s' \
-              "主仓库 Pages 页面提供订阅地址与预览，下载按钮指向本次 Release；其结果和日志仅用于功能测试，不保证内容完整性、可用性或持续更新。实际使用请 [Fork 项目](https://github.com/Guovin/iptv-api/fork) 并运行自己的工作流。" \
-              "The upstream Pages site provides subscription URLs and previews, with Download buttons pointing to this Release. Its results and logs are for functional testing only. Content completeness, availability, and continued updates are not guaranteed. For actual use, [Fork the project](https://github.com/Guovin/iptv-api/fork) and run your own workflow." \
-              "$pages_link"
-          fi
-
-          mapfile -d '' local_assets < <(find release-assets -maxdepth 1 -type f -print0 | sort -z)
-          gh release create "$RELEASE_TAG" "${local_assets[@]}" \
-            --repo "$GITHUB_REPOSITORY" \
-            --target "$SOURCE_SHA" \
-            --title "$release_title" \
-            --notes "$release_notes" \
-            --prerelease
-
-          find release-assets -maxdepth 1 -type f -printf '%f\n' | sort > /tmp/local-assets.txt
-          gh release view "$RELEASE_TAG" \
-            --repo "$GITHUB_REPOSITORY" \
-            --json assets \
-            --jq '.assets[].name' | sort > /tmp/remote-assets.txt
-          diff -u /tmp/local-assets.txt /tmp/remote-assets.txt
