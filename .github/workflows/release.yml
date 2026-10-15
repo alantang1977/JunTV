@@ -26,11 +26,9 @@ jobs:
           if [ -n "${{ github.event.inputs.upstream_version }}" ]; then
             TAG="${{ github.event.inputs.upstream_version }}"
           else
-            # 自动获取上游最新正式 Release 标签
             TAG=$(gh release view --repo Guovin/iptv-api --json tagName --jq '.tagName')
           fi
           
-          # 统一去除版本号前的 v 前缀
           VERSION=$(echo "$TAG" | sed 's/^v//')
           
           echo "version=$VERSION" >> $GITHUB_OUTPUT
@@ -42,21 +40,18 @@ jobs:
         id: check_dup
         shell: bash
         run: |
-          # 手动指定版本时跳过检测，直接构建
           if [ -n "${{ github.event.inputs.upstream_version }}" ]; then
             echo "手动指定版本，跳过重复检测"
             echo "skip_build=false" >> $GITHUB_OUTPUT
             exit 0
           fi
 
-          # 获取本仓库最新发布的版本号（无发布时返回空）
           LOCAL_LATEST=$(gh release view --json tagName --jq '.tagName' 2>/dev/null || echo "")
           LOCAL_VERSION=$(echo "$LOCAL_LATEST" | sed 's/^v//')
 
           echo "上游最新版本: v${{ steps.get_version.outputs.version }}"
           echo "本地已发布版本: ${LOCAL_LATEST:-无}"
 
-          # 版本一致且本地已有发布，则跳过构建
           if [ "${{ steps.get_version.outputs.version }}" = "$LOCAL_VERSION" ] && [ -n "$LOCAL_VERSION" ]; then
             echo "✅ 版本一致，无需重复构建发布"
             echo "skip_build=true" >> $GITHUB_OUTPUT
@@ -78,6 +73,33 @@ jobs:
           repository: Guovin/iptv-api
           ref: ${{ needs.get-upstream-version.outputs.tag }}
 
+      - name: 安装 PySide6 GUI 运行时系统依赖
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            libegl1 \
+            libxkbcommon0 \
+            libfontconfig1 \
+            libxcb1 \
+            libxcb-cursor0 \
+            libxcb-icccm4 \
+            libxcb-image0 \
+            libxcb-keysyms1 \
+            libxcb-randr0 \
+            libxcb-render-util0 \
+            libxcb-shape0 \
+            libxcb-shm0 \
+            libxcb-xfixes0 \
+            libxcb-xinerama0 \
+            libxcb-xkb1 \
+            libxkbcommon-x11-0 \
+            xvfb
+
+      - name: 释放占用端口（8080 RTMP / 其他残留）
+        run: |
+          sudo lsof -ti:8080 | xargs -r sudo kill -9 || true
+          sudo lsof -ti:1935 | xargs -r sudo kill -9 || true
+
       - name: Set up Python 3.14
         uses: actions/setup-python@v6
         with:
@@ -92,11 +114,9 @@ jobs:
           pipenv --python 3.14
           pipenv install --dev --deploy
 
-      - name: 释放 8080 端口（修复 RTMP 测试端口占用）
-        run: sudo lsof -ti:8080 | xargs -r sudo kill -9 || true
-
-      - name: 运行单元测试
-        run: pipenv run python -m unittest discover -s tests -v
+      - name: 运行单元测试（xvfb 虚拟显示环境）
+        run: |
+          xvfb-run -a pipenv run python -m unittest discover -s tests -v
 
   build:
     needs: [get-upstream-version, test]
