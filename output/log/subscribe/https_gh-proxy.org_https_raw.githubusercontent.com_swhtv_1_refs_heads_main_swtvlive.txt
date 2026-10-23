@@ -25,7 +25,7 @@ RDI CANADA,https://rcavlive.akamaized.net/hls/live/696615/xcancbft/master_3000.m
 CNA亚洲新闻,http://d2e1asnsl7br7b.cloudfront.net/7782e205e72f43aeb4a48ec97f66ebbe/index_4.m3u8
 CNA亚洲新闻,https://d2e1asnsl7br7b.cloudfront.net/7782e205e72f43aeb4a48ec97f66ebbe/index_5.m3u8
 CANAL 24 (Spain),http://canal2000.berkano-systems.net/streaming/streams/canal2000-720p.m3u8
-NHK WORLD JAPAN,http://125.227.210.55:35802/VideoInput/play.ts
+NHK WORLD JAPAN,https://nhk.lls.pbs.org/index.m3u8
 RT NEWS(Spain),https://rt-esp.rttv.com/live/rtesp/playlist.m3u8
 RT NEWS(EN),https://rt-glb.rttv.com/dvr/rtnews/playlist_4500Kb.m3u8
 FRANCE 24(FR),https://live.france24.com/hls/live/2037179/F24_FR_HI_HLS/master_500.m3u8
@@ -595,9 +595,15 @@ TSN 1,http://loftytv.xyz:80//live/66C650F999D431D/U7Oc4OQ0VE/42917.ts
 TSN 2,http://38b891c9.rossteleccom.net/iptv/LNE7CK973BXBGD/6492/index.m3u8
 TSN 3,http://38b891c9.rossteleccom.net/iptv/LNE7CK973BXBGD/6522/index.m3u8
 TSN 4,http://38b891c9.rossteleccom.net/iptv/LNE7CK973BXBGD/6445/index.m3u8
-
 TSN 5,http://loftytv.xyz:80//live/66C650F999D431D/U7Oc4OQ0VE/42913.ts
+CA TSN 1,http://doubleclicktv.live:80/natashahawkins/1784295306/3996
+CA TSN 2,http://doubleclicktv.live:80/natashahawkins/1784295306/3995
+CA TSN 3,http://doubleclicktv.live:80/natashahawkins/1784295306/3994
+CA TSN 4,http://doubleclicktv.live:80/natashahawkins/1784295306/3993
+CA TSN 5,http://doubleclicktv.live:80/natashahawkins/1784295306/3992
 
+
+http://doubleclicktv.live:80/natashahawkins/1784295306/3994
 TSN OCHO,https://d3pnbvng3bx2nj.cloudfront.net/v1/manifest/3722c60a815c199d9c0ef36c5b73da68a62b09d1/cc-rds8g35qfqrnv/37d00918-f0a3-48c1-bb12-2f60c968164e/0.m3u8
 Canal Motor,https://digicom.hls.iptvdc.com/motorstv/index.m3u8
 GOLF N,https://dash4.antik.sk/live/test_golf_channel/playlist.m3u8
@@ -1178,7 +1184,7 @@ CGNTV Japan,https://d2p4mrcwl6ly4.cloudfront.net/out/v1/8d50f69fdbbf411a8d302743
 CGTN JP,https://d2p4mrcwl6ly4.cloudfront.net/out/v1/8d50f69fdbbf411a8d302743e4263716/CGNWebLiveJP.m3u8
 TBS Japan,https://tbs5.mov3.co/hls/tbs.m3u8
 フジテレビ,https://fujitv4.mov3.co/hls/fujitv.m3u8
-NHK WORLD JAPAN,http://125.227.210.55:35802/VideoInput/play.ts
+NHK WORLD JAPAN,https://nhk.lls.pbs.org/index.m3u8
 NHKBS,http://125.227.210.55:8210/VideoInput/play.ts
 NHKBSP4K,http://125.227.210.55:8215/VideoInput/play.ts
 NHK BS,https://naori-test.netgenx.site/pxx.php?shk_cid=bs01#.m3u8
