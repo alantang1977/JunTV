@@ -2,8 +2,8 @@
 #EXTVLCOPT:network-caching=1000
 #EXTVLCOPT:live-cache=1000
 #EXTVLCOPT:ttl=5
-#PLAYLIST:HK & TW IPTV 2026-11-16
-# Total: 150 channels, 10 categories, min speed: 30 KB/s
+#PLAYLIST:HK & TW IPTV 2026-11-18
+# Total: 151 channels, 10 categories, min speed: 30 KB/s
 
 #EXTGRP:📡 卫视频道 (10)
 # speed: N/A
@@ -37,7 +37,7 @@ https://t.freetv.fun/live/hua-shi-jiao-yu-ti-yu-wen-hua.ts
 #EXTINF:-1 tvg-name="华视新闻资讯" tvg-logo="https://epg.pw/media/images/channel/2023/07/18/large/20230718001309024626_13.jpg" group-title="📡 卫视频道",华视新闻资讯
 https://t.freetv.fun/live/hua-shi-xin-wen-zi-xun.ts
 
-#EXTGRP:📺 TVB (79)
+#EXTGRP:📺 TVB (80)
 # speed: N/A
 #EXTINF:-1 tvg-name="TVB 翡翠台" tvg-logo="https://gitee.com/suxuang/logo/raw/master/mylogo/翡翠台.png" group-title="📺 TVB",TVB 翡翠台
 http://r.jdshipin.com/qClQf
@@ -191,6 +191,9 @@ https://59f2354c05961.streamlock.net:1443/tvdigitalbirigui/_definst_/tvdigitalbi
 # speed: N/A
 #EXTINF:-1 tvg-name="TVBozsikeHamburg" tvg-logo="https://radiobozsike.com/img/icons/android-chrome-512x512.png" group-title="📺 TVB",TVBozsikeHamburg
 https://rtmp.radiobozsike.com/hls/stream1.m3u8
+# speed: N/A
+#EXTINF:-1 tvg-name="TVBreizh" tvg-logo="https://i.imgur.com/O8W4yhn.png" group-title="📺 TVB",TVBreizh
+https://r.eu.cdn-redge.media/livehls/oeu/mt/live/tv_breizh/live.livx/playlist.m3u8
 # speed: N/A
 #EXTINF:-1 tvg-name="TVBrezova" tvg-logo="https://i.imgur.com/59LpYoF.png" group-title="📺 TVB",TVBrezova
 http://95.105.193.219:88/hls/tvb.m3u8
